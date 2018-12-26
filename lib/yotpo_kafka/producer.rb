@@ -6,7 +6,6 @@ require 'securerandom'
 module YotpoKafka
   class Producer
     include ::Phobos::Producer
-    ALL_PRODUCE_FAILURES_FROM_ALL_TOPICS = 'all_produce_failures_from_all_topics'
 
     def initialize(params = {})
       @gap_between_retries = params[:gap_between_retries] || 0
@@ -14,17 +13,26 @@ module YotpoKafka
       @num_retries = params[:num_retries] || 0
       @logger = params[:logger] || nil
       @client_id = params[:client_id] || 'yotpo-kafka'
-      YotpoKafka::ProducerConfig.configure(@kafka_broker_url, @client_id)
+      @use_red_cross = params[:red_cross] || nil
+      config(params)
     rescue => error
+      log_error("Producer failed to initialize", {error: error})
       if @logger
         @logger.error "The following error occurred when configuring: #{error}"
       end
     end
 
+    def config(params)
+      YotpoKafka::RedCrossKafka.config_red_cross(params[:red_cross]) unless params[:red_cross].nil?
+      YotpoKafka::YLoggerKafka.config(params[:logstash_logger] || false)
+      YotpoKafka::ProducerConfig.configure(@kafka_broker_url, @client_id)
+    end
+
+
     def publish(topic, message, key = nil, msg_id = nil)
       payload = message
-      if message['header'].nil?
-        payload = { header: {timestamp: DateTime.now,
+      if message['kafka_header'].nil?
+        payload = { kafka_header: {timestamp: DateTime.now,
                              msg_id: msg_id || SecureRandom.uuid,
                              kafka_broker_url: @kafka_broker_url},
                     message: message}
@@ -36,12 +44,16 @@ module YotpoKafka
       messages.each do |message|
         publish(message[:topic], message[:message], message[:key], message[:msg_id])
       end
+      log_info("Messages sent successfully")
     end
 
     def publish_messages(messages)
       producer.publish_list(messages)
       YotpoKafka::Producer.producer.kafka_client.close
+      RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) unless @use_red_cross.nil?
     rescue => error
+      log_error("Enqueue failed", {error: error})
+      RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) unless @use_red_cross.nil?
       messages.each do |message|
         params = HashWithIndifferentAccess.new(message)
         if @logger
@@ -56,7 +68,7 @@ module YotpoKafka
                   error)
         elsif @num_of_retries == 0
           enqueue(params[:payload],
-                  ALL_PRODUCE_FAILURES_FROM_ALL_TOPICS,
+                  "#{params[:topic]}_fatal",
                   params[:key],
                   parmas[:msg_id],
                   error)
@@ -75,9 +87,7 @@ module YotpoKafka
                         num_of_retries: @num_retries - 1,
                         exception_message: error)
     rescue => error
-      if @logger
-        @logger.error "enqueue with msg_id #{msg_id} failed due to #{error}"
-      end
+      log_error("Enqueue failed", {error: error})
     end
   end
 end

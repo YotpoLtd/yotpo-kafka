@@ -16,7 +16,8 @@ module YotpoKafka
 
     def self.get_listeners(params)
       listeners = []
-      params[:listeners].each do |listener|
+      listeners_arr = get_listeners_for_retires(params[:topic], params[:group_id])
+      listeners_arr.each do |listener|
         listeners <<
             {
                 handler: params[:handler],
@@ -27,6 +28,12 @@ module YotpoKafka
                 delivery: :message,
             }
       end
+      return listeners
+    end
+
+    def self.get_listeners_for_retires(topic, group_id)
+      listeners = [{topic: topic, group_id: group_id},
+                   {topic: "#{topic}_#{group_id}_failures", group_id: "#{group_id}_fail"}]
       return listeners
     end
 

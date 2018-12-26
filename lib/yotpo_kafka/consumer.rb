@@ -1,25 +1,33 @@
 require 'kafka'
 require 'phobos/cli/runner'
+require 'ylogger'
 
 module YotpoKafka
   class Consumer
     include ::Phobos::Handler
-    ALL_CONSUME_FAILURES_FROM_ALL_TOPICS = 'all_consume_failures_from_all_topics'
+    extend Ylogger
 
     def initialize()
       @gap_between_retries = 0
-      @topic_for_failures = ''
-      @num_retries = -1
+      @num_retries = 0
       @logger = nil
+      @use_red_cross = nil
     end
 
-    def self.start_consumer_running(params = {})
-      YotpoKafka::ConsumerRunner.run(params)
+    def self.start_consumer(params = {})
+      config(params)
+      log_info("Configured successfully")
     rescue => error
-      if @logger
-        @logger.error "Could not subscribe the following handler:
-                       #{params[:handler].to_s} due to error: #{error}"
+      log_error("Could not subscribe as a consumer",
+                { handler: params[:handler],
+                          error: error})
       end
+    end
+
+    def self.config(params)
+      YotpoKafka::RedCrossKafka.config(params[:red_cross]) unless params[:red_cross].nil?
+      YotpoKafka::YLoggerKafka.config(params[:logstash_logger] || false)
+      YotpoKafka::ConsumerRunner.run(params)
     end
 
     def consume_message(_message)
@@ -29,12 +37,15 @@ module YotpoKafka
     def consume(payload, metadata)
       parsed_payload = JSON.parse(payload)
       consume_message(parsed_payload['message'])
+      log_info( "Message consumed", { topic: metadata[:topic],
+                                      handler: metadata[:handler]})
+      RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @use_red_cross.nil?
     rescue => error
-      enqueue_to_relevant_topic(JSON.parse(payload), error) unless @num_retries == -1
-      if @logger
-        @logger.error "Could not consume from the following topic
-                        #{metadata[:topic]} due to error: #{error}"
-      end
+      log_error("Message was not consumed", {topic: metadata.topic,
+                                             handler: metadata[:handler],
+                                             error: error})
+      enqueue_to_relevant_topic(JSON.parse(payload), error, metadata) unless @num_retries == -1
+      RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @use_red_cross.nil?
     end
 
     def enqueue(payload, topic, error)
@@ -42,37 +53,34 @@ module YotpoKafka
                         exception_message: error,
                         topic: topic,
                         base64_payload: Base64.encode64(payload.to_json),
-                        kafka_broker_url: payload['header']['kafka_broker_url'])
+                        kafka_broker_url: payload['kafka_header']['kafka_broker_url'])
     rescue => error
-      if @logger
-        @logger.error "Could not enqueue to resque the following topic
-                       #{topic} due to error: #{error}"
-      end
+      log_error("Enqueue failed", {error: error})
     end
 
-    def enqueue_to_relevant_topic(payload, error)
+    def enqueue_to_relevant_topic(payload, error, metadata)
       calc_num_of_retries(payload)
-      topic_to_enqueue = get_topic_to_enqueue(payload)
+      topic_to_enqueue = get_topic_to_enqueue(payload, metadata)
       enqueue(payload, topic_to_enqueue, error) unless topic_to_enqueue.nil?
     end
 
     def calc_num_of_retries(payload)
-      payload['header']['num_retries'] = if payload['header']['num_retries'].nil? then
+      payload['kafka_header']['num_retries'] = if payload['kafka_header']['num_retries'].nil? then
                                            @num_retries
                                          else
-                                           payload['header']['num_retries'] - 1
+                                           payload['kafka_header']['num_retries'] - 1
                                          end
     end
 
-    def get_topic_to_enqueue(payload)
-      if payload['header']['num_retries'] > 0
-        return @topic_for_failures
-      elsif payload['header']['num_retries'] == 0
-        return Consumer::ALL_CONSUME_FAILURES_FROM_ALL_TOPICS
+    def get_topic_to_enqueue(payload, metadata)
+      if payload['kafka_header']['num_retries'] > 0
+        topic_of_failures = "#{metadata[:topic]}_#{metadata[:group_id]}_failures"
+        return topic_of_failures
+      elsif payload['kafka_header']['num_retries'] == 0
+        topic_of_fatal = "#{metadata[:topic]}_fatal"
+        return topic_of_fatal
       else
         return nil
       end
     end
-
-  end
 end

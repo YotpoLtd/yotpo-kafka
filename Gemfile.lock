@@ -3,8 +3,10 @@ PATH
   specs:
     yotpo_kafka (0.0.0)
       phobos
+      red_cross
       resque (>= 1.26)
       ruby-kafka (= 0.5.3)
+      ylogger
 
 GEM
   remote: https://rubygems.org/
@@ -14,16 +16,28 @@ GEM
       i18n (>= 0.7, < 2)
       minitest (~> 5.1)
       tzinfo (~> 1.1)
-    concurrent-ruby (1.1.3)
-    concurrent-ruby-ext (1.1.3)
-      concurrent-ruby (= 1.1.3)
+    analytics-ruby (2.2.5)
+      commander (~> 4.4)
+    commander (4.4.7)
+      highline (~> 2.0.0)
+    concurrent-ruby (1.1.4)
+    concurrent-ruby-ext (1.1.4)
+      concurrent-ruby (= 1.1.4)
+    ethon (0.11.0)
+      ffi (>= 1.3.0)
     exponential-backoff (0.0.2)
+    ffi (1.9.25)
+    highline (2.0.0)
     i18n (1.1.0)
       concurrent-ruby (~> 1.0)
+    influxdb (0.5.2)
     little-plugger (1.1.4)
     logging (2.2.2)
       little-plugger (~> 1.1)
       multi_json (~> 1.10)
+    logstash-event (1.2.02)
+    logstash-logger (0.26.1)
+      logstash-event (~> 1.2)
     minitest (5.11.3)
     mono_logger (1.1.0)
     multi_json (1.13.1)
@@ -37,9 +51,14 @@ GEM
       ruby-kafka
       thor
     rack (2.0.6)
-    rack-protection (2.0.4)
+    rack-protection (2.0.5)
       rack
-    redis (4.0.3)
+    red_cross (0.3.0)
+      analytics-ruby (~> 2.2.2)
+      influxdb (~> 0.5.0)
+      resque (~> 1.25)
+      typhoeus (~> 0.6.5)
+    redis (4.1.0)
     redis-namespace (1.6.0)
       redis (>= 3.0.4)
     resque (1.27.4)
@@ -49,18 +68,22 @@ GEM
       sinatra (>= 0.9.2)
       vegas (~> 0.1.2)
     ruby-kafka (0.5.3)
-    sinatra (2.0.4)
+    sinatra (2.0.5)
       mustermann (~> 1.0)
       rack (~> 2.0)
-      rack-protection (= 2.0.4)
+      rack-protection (= 2.0.5)
       tilt (~> 2.0)
     thor (0.20.3)
     thread_safe (0.3.6)
-    tilt (2.0.8)
+    tilt (2.0.9)
+    typhoeus (0.6.9)
+      ethon (>= 0.7.1)
     tzinfo (1.2.5)
       thread_safe (~> 0.1)
     vegas (0.1.11)
       rack (>= 1.0.0)
+    ylogger (0.1.2)
+      logstash-logger (= 0.26.1)
 
 PLATFORMS
   ruby
@@ -69,4 +92,4 @@ DEPENDENCIES
   yotpo_kafka!
 
 BUNDLED WITH
-   1.16.6
+   1.17.2

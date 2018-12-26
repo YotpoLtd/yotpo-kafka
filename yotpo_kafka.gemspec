@@ -10,6 +10,8 @@ Gem::Specification.new do |s|
   s.add_dependency 'phobos'
   s.add_dependency 'ruby-kafka', '0.5.3'
   s.add_dependency 'resque', '>= 1.26'
-  # s.add_dependency 'ylogger',  'https://yotpo.jfrog.io/yotpo/api/gems/gem-local/'
+  s.add_dependency 'red_cross'
+
+  s.add_runtime_dependency 'ylogger'
   # s.add_dependency 'rspec-rails', '>= 3.5.0.beta2'
 end
