@@ -2,10 +2,12 @@ require 'phobos'
 require 'kafka'
 require 'date'
 require 'securerandom'
+require 'ylogger'
 
 module YotpoKafka
   class Producer
     include ::Phobos::Producer
+    extend Ylogger
 
     def initialize(params = {})
       @gap_between_retries = params[:gap_between_retries] || 0
@@ -17,9 +19,6 @@ module YotpoKafka
       config(params)
     rescue => error
       log_error("Producer failed to initialize", {error: error})
-      if @logger
-        @logger.error "The following error occurred when configuring: #{error}"
-      end
     end
 
     def config(params)
