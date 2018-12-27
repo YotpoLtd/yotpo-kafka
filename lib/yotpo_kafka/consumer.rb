@@ -19,7 +19,7 @@ module YotpoKafka
       log_info("Configured successfully")
     rescue => error
       log_error("Could not subscribe as a consumer",
-                { handler: params[:handler]}, error)
+                { handler: params[:handler].to_s}, error)
     end
 
     def self.config(params)
@@ -36,11 +36,11 @@ module YotpoKafka
       parsed_payload = JSON.parse(payload)
       consume_message(parsed_payload['message'])
       log_info( "Message consumed", { topic: metadata[:topic],
-                                      handler: metadata[:handler]})
+                                      handler: metadata[:handler].to_s})
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @use_red_cross.nil?
     rescue => error
       log_error("Message was not consumed", {topic: metadata.topic,
-                                             handler: metadata[:handler],
+                                             handler: metadata[:handler].to_s,
                                              error: error})
       enqueue_to_relevant_topic(JSON.parse(payload), error, metadata) unless @num_retries == -1
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @use_red_cross.nil?
