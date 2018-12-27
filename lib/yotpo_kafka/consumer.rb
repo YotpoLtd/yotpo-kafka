@@ -19,9 +19,7 @@ module YotpoKafka
       log_info("Configured successfully")
     rescue => error
       log_error("Could not subscribe as a consumer",
-                { handler: params[:handler],
-                          error: error})
-      end
+                { handler: params[:handler]}, error)
     end
 
     def self.config(params)
@@ -83,4 +81,5 @@ module YotpoKafka
         return nil
       end
     end
+  end
 end
