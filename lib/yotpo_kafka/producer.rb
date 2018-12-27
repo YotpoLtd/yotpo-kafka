@@ -55,10 +55,6 @@ module YotpoKafka
       RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) unless @use_red_cross.nil?
       messages.each do |message|
         params = HashWithIndifferentAccess.new(message)
-        if @logger
-          @logger.error "message with msg_id #{params[:msg_id]}
-                         failed to publish due to #{error}"
-        end
         if @num_of_retries > 0
           enqueue(params[:payload],
                   params[:topic],
