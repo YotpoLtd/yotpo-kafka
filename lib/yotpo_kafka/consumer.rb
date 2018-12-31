@@ -7,25 +7,32 @@ module YotpoKafka
     include ::Phobos::Handler
     extend Ylogger
 
-    def initialize()
-      @gap_between_retries = 0
-      @num_retries = 0
-      @logger = nil
-      @use_red_cross = nil
+    def initialize(context = {})
+      params = HashWithIndifferentAccess.new(context)
+      @gap_between_retries = params['gap_between_retries'] || 0
+      @num_retries = params['num_retries'] || 0
+      @red_cross_params = params['red_cross_params'] || nil
+      @logstash_logger = params['logstash_logger'] || false
+      @active_job = params['active_job'] || nil
+      config()
+    rescue => error
+      log_error("Could not initialize", error)
     end
 
-    def self.start_consumer(params = {})
-      config(params)
+    def self.start_consumer(params)
+      YotpoKafka::ConsumerRunner.run(params)
+      YotpoKafka::YLoggerKafka.config(params[:logstash_logger] || false)
       log_info("Configured successfully")
     rescue => error
-      log_error("Could not subscribe as a consumer",
-                { handler: params[:handler].to_s}, error)
+      log_error("Could not subscribe as a consumer",{ handler: params[:handler].to_s}, exception: error)
     end
 
-    def self.config(params)
-      YotpoKafka::RedCrossKafka.config(params[:red_cross]) unless params[:red_cross].nil?
-      YotpoKafka::YLoggerKafka.config(params[:logstash_logger] || false)
-      YotpoKafka::ConsumerRunner.run(params)
+    def config()
+      YotpoKafka::RedCrossKafka.config(@red_cross_params)
+      YotpoKafka::YLoggerKafka.config(@logstash_logger)
+      YotpoKafka::ActiveJobs.config(@active_job)
+    rescue => error
+      log_error("Could not config", exception: error)
     end
 
     def consume_message(_message)
@@ -39,21 +46,25 @@ module YotpoKafka
                                       handler: metadata[:handler].to_s})
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @use_red_cross.nil?
     rescue => error
-      log_error("Message was not consumed", {topic: metadata.topic,
-                                             handler: metadata[:handler].to_s,
-                                             error: error})
+      log_error("Message was not consumed", {topic: metadata[:topic],
+                                             handler: metadata[:handler].to_s}, exception: error)
       enqueue_to_relevant_topic(JSON.parse(payload), error, metadata) unless @num_retries == -1
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @use_red_cross.nil?
     end
 
     def enqueue(payload, topic, error)
-      Resque.enqueue_in(@gap_between_retries, ConsumerWorker,
-                        exception_message: error,
-                        topic: topic,
-                        base64_payload: Base64.encode64(payload.to_json),
-                        kafka_broker_url: payload['kafka_header']['kafka_broker_url'])
+      params = {
+          'exception_message' => error,
+          'topic' => topic,
+          'base64_payload' => Base64.encode64(payload.to_json),
+          'kafka_broker_url' => payload['kafka_header']['kafka_broker_url'],
+          'active_job' => @active_job,
+          'red_cross_params' => @red_cross_params,
+          'logstash_logger' => @logstash_logger}
+
+      ConsumerWorker.set(wait: @gap_between_retries).perform_later(params.to_json)
     rescue => error
-      log_error("Enqueue failed", {error: error})
+      log_error("Enqueue failed", exception: error)
     end
 
     def enqueue_to_relevant_topic(payload, error, metadata)

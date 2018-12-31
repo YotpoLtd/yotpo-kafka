@@ -13,5 +13,6 @@ Gem::Specification.new do |s|
   s.add_dependency 'red_cross'
 
   s.add_runtime_dependency 'ylogger'
+  s.add_dependency 'activejob'
   # s.add_dependency 'rspec-rails', '>= 3.5.0.beta2'
 end
