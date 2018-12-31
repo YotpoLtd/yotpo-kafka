@@ -32,14 +32,12 @@ module YotpoKafka
 
 
     def publish(topic, message, key = nil, msg_id = nil)
-      payload = message
       if message['kafka_header'].nil?
-        payload = { kafka_header: {timestamp: DateTime.now,
-                             msg_id: msg_id || SecureRandom.uuid,
-                             kafka_broker_url: @kafka_broker_url},
-                    message: message}
+        message['kafka_header'] = {timestamp: DateTime.now,
+                                   msg_id: msg_id || SecureRandom.uuid,
+                                   kafka_broker_url: @kafka_broker_url}
       end
-      publish_messages([{ topic: topic, payload: payload.to_json, key: key }])
+      publish_messages([{ topic: topic, payload: message.to_json, key: key }])
     end
 
     def publish_multiple(messages)

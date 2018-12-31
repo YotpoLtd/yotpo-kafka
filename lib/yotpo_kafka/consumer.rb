@@ -41,7 +41,7 @@ module YotpoKafka
 
     def consume(payload, metadata)
       parsed_payload = JSON.parse(payload)
-      consume_message(parsed_payload['message'])
+      consume_message(parsed_payload.except!(:kafka_header))
       log_info( "Message consumed", { topic: metadata[:topic],
                                       handler: metadata[:handler].to_s})
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @use_red_cross.nil?
