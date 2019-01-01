@@ -81,7 +81,7 @@ module YotpoKafka
                 'red_cross' => @red_cross,
                 'logstash_logger' => @logstash_logger,
                 'topic'  => topic,
-                'base64_payload' => Base64.encode64(payload),
+                'payload' => payload,
                 'key' => key,
                 'msg_id' => msg_id,
                 'exception_message' => error}

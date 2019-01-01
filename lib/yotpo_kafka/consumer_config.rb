@@ -7,7 +7,7 @@ module YotpoKafka
                       consumer_auto_commit_interval: params[:consumer_auto_commit_interval] || 10000},
           backoff: { min_ms: 1000, max_ms: 60000 },
           logger: { ruby_kafka: { level: :info }},
-          kafka: { client_id: get_unique_client_id(params[:handler].to_s, params[:group_id]),
+          kafka: { client_id: get_unique_client_id(params[:handler].to_s, params[:group_id].to_s),
                    seed_brokers: params[:kafka_broker_url].split(',') },
           listeners: get_listeners(params),
           producer: {}
@@ -16,7 +16,7 @@ module YotpoKafka
 
     def self.get_listeners(params)
       listeners = []
-      listeners_arr = get_listeners_for_retires(params[:topic], params[:group_id])
+      listeners_arr = get_listeners_for_retires(params[:topic], params[:group_id].to_s)
       listeners_arr.each do |listener|
         listeners <<
             {

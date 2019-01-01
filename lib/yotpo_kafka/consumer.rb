@@ -1,6 +1,7 @@
 require 'kafka'
 require 'phobos/cli/runner'
 require 'ylogger'
+require 'active_support'
 
 module YotpoKafka
   class Consumer
@@ -41,7 +42,7 @@ module YotpoKafka
 
     def consume(payload, metadata)
       parsed_payload = JSON.parse(payload)
-      consume_message(parsed_payload.except!(:kafka_header))
+      consume_message(parsed_payload.except!('kafka_header'))
       log_info( "Message consumed", { topic: metadata[:topic],
                                       handler: metadata[:handler].to_s})
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @use_red_cross.nil?
@@ -56,8 +57,8 @@ module YotpoKafka
       params = {
           'exception_message' => error,
           'topic' => topic,
-          'base64_payload' => Base64.encode64(payload.to_json),
-          'kafka_broker_url' => payload['kafka_header']['kafka_broker_url'],
+          'payload' => payload,
+          'kafka_broker_url' => Phobos.config.kafka.seed_brokers[0],
           'active_job' => @active_job,
           'red_cross_params' => @red_cross_params,
           'logstash_logger' => @logstash_logger}
@@ -74,23 +75,28 @@ module YotpoKafka
     end
 
     def calc_num_of_retries(payload)
-      payload['kafka_header']['num_retries'] = if payload['kafka_header']['num_retries'].nil? then
-                                           @num_retries
-                                         else
-                                           payload['kafka_header']['num_retries'] - 1
-                                         end
+      if payload['kafka_header'].nil?
+        payload['kafka_header'] = {'num_retries' => @num_retries}
+      elsif payload['kafka_header']['num_retries'].nil?
+        payload['kafka_header']['num_retries'] = @num_retries
+      else
+        payload['kafka_header']['num_retries'] -= 1
+      end
     end
 
     def get_topic_to_enqueue(payload, metadata)
-      if payload['kafka_header']['num_retries'] > 0
-        topic_of_failures = "#{metadata[:topic]}_#{metadata[:group_id]}_failures"
-        return topic_of_failures
-      elsif payload['kafka_header']['num_retries'] == 0
+      if payload['kafka_header']['num_retries'] == 0
         topic_of_fatal = "#{metadata[:topic]}_fatal"
         return topic_of_fatal
-      else
-        return nil
       end
+      if payload['kafka_header']['num_retries'] == @num_retries
+        topic_of_failures = "#{metadata[:topic]}_#{metadata[:group_id]}_failures"
+        return topic_of_failures
+      end
+      if payload['kafka_header']['num_retries'] > 0
+        return metadata[:topic]
+      end
+      return nil
     end
   end
 end

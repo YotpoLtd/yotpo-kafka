@@ -3,6 +3,7 @@ PATH
   specs:
     yotpo_kafka (0.0.0)
       activejob
+      activesupport
       phobos (= 1.7.0)
       red_cross
       resque (>= 1.26)

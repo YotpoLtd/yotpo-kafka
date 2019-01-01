@@ -9,8 +9,7 @@ module YotpoKafka
                                            'active_job' => (params['active_job'].to_sym if params['active_job']),
                                            'red_cross' => (params['red_cross'].to_sym if params['red_cross']),
                                            'logstash_logger'=> params['logstash_logger'])
-      payload = JSON.parse(Base64.decode64(params['base64_payload']))
-      producer.publish(params['topic'], payload)
+      producer.publish(params['topic'], params['payload'])
     rescue => error
       raise "an error occurred, error: #{error}"
     end
