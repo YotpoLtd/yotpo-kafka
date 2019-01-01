@@ -7,7 +7,7 @@ Gem::Specification.new do |s|
   s.files = ['lib/yotpo_kafka.rb']
   s.require_paths = ["lib"]
 
-  s.add_dependency 'phobos'
+  s.add_dependency 'phobos', '1.7.0'
   s.add_dependency 'ruby-kafka', '0.5.3'
   s.add_dependency 'resque', '>= 1.26'
   s.add_dependency 'red_cross'

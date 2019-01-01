@@ -3,7 +3,7 @@ PATH
   specs:
     yotpo_kafka (0.0.0)
       activejob
-      phobos
+      phobos (= 1.7.0)
       red_cross
       resque (>= 1.26)
       ruby-kafka (= 0.5.3)
@@ -48,13 +48,13 @@ GEM
     mono_logger (1.1.0)
     multi_json (1.13.1)
     mustermann (1.0.3)
-    phobos (1.8.1)
+    phobos (1.7.0)
       activesupport (>= 3.0.0)
       concurrent-ruby (>= 1.0.2)
       concurrent-ruby-ext (>= 1.0.2)
       exponential-backoff
       logging
-      ruby-kafka
+      ruby-kafka (>= 0.3.14)
       thor
     rack (2.0.6)
     rack-protection (2.0.5)
