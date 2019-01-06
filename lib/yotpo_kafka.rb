@@ -1,5 +1,6 @@
 require_relative '../config/initializers/red_cross_monitor'
 require_relative '../config/initializers/ylogger'
+require_relative '../config/initializers/active_job'
 require 'yotpo_kafka/producer'
 require 'yotpo_kafka/producer_worker'
 require 'yotpo_kafka/consumer_worker'
