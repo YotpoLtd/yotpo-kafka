@@ -3,6 +3,7 @@ require 'kafka'
 require 'date'
 require 'securerandom'
 require 'ylogger'
+require 'json'
 
 module YotpoKafka
   class Producer
@@ -11,8 +12,8 @@ module YotpoKafka
 
     def initialize(context = {})
       params = HashWithIndifferentAccess.new(context)
-      @gap_between_retries = params[:gap_between_retries] || 0
       @kafka_broker_url = params[:kafka_broker_url]
+      @gap_between_retries = params[:gap_between_retries] || 0
       @num_retries = params[:num_retries] || 0
       @client_id = params[:client_id] || 'yotpo-kafka'
       @active_job = params[:active_job] || nil
@@ -21,6 +22,7 @@ module YotpoKafka
       config()
     rescue => error
       log_error("Producer failed to initialize", {error: error})
+      raise 'Producer failed to initialize'
     end
 
     def config()
@@ -70,6 +72,7 @@ module YotpoKafka
                   error)
         end
       end
+      raise 'Publish failed'
     end
 
     def enqueue(payload, topic, key, msg_id, error)
@@ -88,6 +91,7 @@ module YotpoKafka
       ProducerWorker.set(wait: @gap_between_retries).perform_later(params.to_json)
     rescue => error
       log_error("Enqueue failed", {error: error})
+      raise 'Enqueue failed'
     end
   end
 end

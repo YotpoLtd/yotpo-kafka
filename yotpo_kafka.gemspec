@@ -15,5 +15,6 @@ Gem::Specification.new do |s|
   s.add_runtime_dependency 'ylogger'
   s.add_dependency 'activejob'
   s.add_dependency 'activesupport'
-  # s.add_dependency 'rspec-rails', '>= 3.5.0.beta2'
+  s.add_dependency 'rake'
+  s.add_development_dependency "rspec"
 end
