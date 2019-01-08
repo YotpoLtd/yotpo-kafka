@@ -2,17 +2,11 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="5fa786e6-18bc-4c8a-875d-58c5c472220d" name="Default" comment="">
-      <change afterPath="$PROJECT_DIR$/bin/bundle" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/spec/consumer_spec.rb" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/kafka_gem.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/kafka_gem.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Gemfile.lock" beforeDir="false" afterPath="$PROJECT_DIR$/Gemfile.lock" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/lib/yotpo_kafka/producer.rb" beforeDir="false" afterPath="$PROJECT_DIR$/lib/yotpo_kafka/producer.rb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/spec/helpers/consumer_helper.rb" beforeDir="false" afterPath="$PROJECT_DIR$/spec/helpers/consumer_helper.rb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/spec/producer_spec.rb" beforeDir="false" afterPath="$PROJECT_DIR$/spec/producer_spec.rb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/spec/spec_helper.rb" beforeDir="false" afterPath="$PROJECT_DIR$/spec/spec_helper.rb" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/yotpo_kafka.gemspec" beforeDir="false" afterPath="$PROJECT_DIR$/yotpo_kafka.gemspec" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -28,7 +22,7 @@
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_expects_the_topic_to_be_enqueued_to_be_the_nil__kafka_gem.rcov" NAME="YotpoKafka expects the topic to be enqueued to be the nil: kafka_gem Coverage Results" MODIFIED="1546958101865" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_expects_num_of_retries_to_be_as_defined_in_consumer_helper__kafka_gem.rcov" NAME="YotpoKafka expects num of retries to be as defined in consumer_helper: kafka_gem Coverage Results" MODIFIED="1546955872150" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_config_a_producer_properly__kafka_gem.rcov" NAME="YotpoKafka config a producer properly: kafka_gem Coverage Results" MODIFIED="1546863496418" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
-    <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka__kafka_gem.rcov" NAME="YotpoKafka: kafka_gem Coverage Results" MODIFIED="1546959697679" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
+    <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka__kafka_gem.rcov" NAME="YotpoKafka: kafka_gem Coverage Results" MODIFIED="1547114883673" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_enqueue_failed_to_produce_and_has_no_active_job__kafka_gem.rcov" NAME="YotpoKafka enqueue failed to produce and has no active job: kafka_gem Coverage Results" MODIFIED="1546861612588" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_expects_the_topic_to_be_enqueued_to_contain_fatal__kafka_gem.rcov" NAME="YotpoKafka expects the topic to be enqueued to contain fatal: kafka_gem Coverage Results" MODIFIED="1546957910289" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@Run_test__producer_spec___kafka_gem.rcov" NAME="Run test 'producer_spec': kafka_gem Coverage Results" MODIFIED="1546431847063" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
@@ -37,7 +31,7 @@
     <SUITE FILE_PATH="coverage/yotpo_kafka@should_succeed_to_connect_to_Kafka__producer_spec_rb___kafka_gem.rcov" NAME="should succeed to connect to Kafka (producer_spec.rb): kafka_gem Coverage Results" MODIFIED="1546508052757" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_create_a_producer_with_client_id_to_be_kafka_test__kafka_gem.rcov" NAME="YotpoKafka create a producer with client_id to be kafka-test: kafka_gem Coverage Results" MODIFIED="1546523110379" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_publish_multiple_messages__kafka_gem.rcov" NAME="YotpoKafka publish multiple messages: kafka_gem Coverage Results" MODIFIED="1546860633861" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
-    <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka__kafka_gem__1_.rcov" NAME="YotpoKafka: kafka_gem (1) Coverage Results" MODIFIED="1546959689570" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
+    <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka__kafka_gem__1_.rcov" NAME="YotpoKafka: kafka_gem (1) Coverage Results" MODIFIED="1547114857833" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_publish_message_with_kafka_header_to_return_message_with_given_timestamp_in_kafka_header__kafka_gem.rcov" NAME="YotpoKafka publish message with kafka header to return message with given timestamp in kafka header: kafka_gem Coverage Results" MODIFIED="1546863694745" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_publish_message_without_kafka_header_to_return_message_with_a_kafka_header__kafka_gem.rcov" NAME="YotpoKafka publish message without kafka header to return message with a kafka header: kafka_gem Coverage Results" MODIFIED="1546863673445" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
     <SUITE FILE_PATH="coverage/yotpo_kafka@YotpoKafka_enqueue_failed_production___kafka_gem.rcov" NAME="YotpoKafka enqueue failed production : kafka_gem Coverage Results" MODIFIED="1546861550034" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="rcov" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" MODULE_NAME="kafka_gem" />
@@ -59,8 +53,38 @@
       <file leaf-file-name="producer.rb" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/lib/yotpo_kafka/producer.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="346">
-              <caret line="30" column="32" lean-forward="true" selection-start-line="30" selection-start-column="29" selection-end-line="30" selection-end-column="35" />
+            <state relative-caret-position="-768">
+              <caret line="20" column="57" selection-start-line="20" selection-start-column="53" selection-end-line="20" selection-end-column="57" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="consumer.rb" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="188">
+              <caret line="55" column="113" selection-start-line="55" selection-start-column="113" selection-end-line="55" selection-end-column="113" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="README.md" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/README.md">
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor relative-caret-position="357">
+                <caret line="43" lean-forward="true" selection-start-line="43" selection-end-line="43" />
+              </first_editor>
+              <second_editor />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="core.rb" pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.rvm/gems/ruby-2.4.1/gems/activejob-4.2.10/lib/active_job/core.rb">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="125">
+              <caret line="51" column="10" selection-start-line="51" selection-start-column="10" selection-end-line="51" selection-end-column="10" />
             </state>
           </provider>
         </entry>
@@ -77,8 +101,8 @@
       <file leaf-file-name="consumer_spec.rb" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/spec/consumer_spec.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="461">
-              <caret line="39" selection-start-line="39" selection-end-line="39" />
+            <state relative-caret-position="315">
+              <caret line="21" lean-forward="true" selection-start-line="21" selection-end-line="21" />
             </state>
           </provider>
         </entry>
@@ -86,13 +110,13 @@
       <file leaf-file-name="producer_spec.rb" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/spec/producer_spec.rb">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="188">
-              <caret line="55" column="32" lean-forward="true" selection-start-line="55" selection-start-column="32" selection-end-line="55" selection-end-column="32" />
+            <state relative-caret-position="90">
+              <caret line="6" column="20" lean-forward="true" selection-start-line="6" selection-start-column="20" selection-end-line="6" selection-end-column="20" />
             </state>
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="active_job.rb" pinned="false" current-in-tab="true">
+      <file leaf-file-name="active_job.rb" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/config/initializers/active_job.rb">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="60">
@@ -130,6 +154,7 @@
       <find>hello</find>
       <find>group_id</find>
       <find>@num_retries</find>
+      <find>not_to</find>
       <find>meta</find>
     </findStrings>
   </component>
@@ -167,11 +192,12 @@
         <option value="$PROJECT_DIR$/spec/spec_helper.rb" />
         <option value="$PROJECT_DIR$/lib/yotpo_kafka/consumer_config.rb" />
         <option value="$PROJECT_DIR$/spec/comsumer_spec.rb" />
-        <option value="$PROJECT_DIR$/spec/producer_spec.rb" />
-        <option value="$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb" />
         <option value="$PROJECT_DIR$/spec/helpers/consumer_helper.rb" />
         <option value="$PROJECT_DIR$/spec/consumer_spec.rb" />
+        <option value="$PROJECT_DIR$/spec/producer_spec.rb" />
         <option value="$PROJECT_DIR$/lib/yotpo_kafka/producer.rb" />
+        <option value="$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb" />
+        <option value="$PROJECT_DIR$/README.md" />
       </list>
     </option>
   </component>
@@ -223,24 +249,6 @@
             <path>
               <item name="yotpo_kafka" type="b2602c69:ProjectViewProjectNode" />
               <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-            </path>
-            <path>
-              <item name="yotpo_kafka" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="rspec-support (v3.8.0, RVM: ruby-2.4.1) [gem]" type="70bed36:NamedLibraryElementNode" />
-            </path>
-            <path>
-              <item name="yotpo_kafka" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="rspec-support (v3.8.0, RVM: ruby-2.4.1) [gem]" type="70bed36:NamedLibraryElementNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-            </path>
-            <path>
-              <item name="yotpo_kafka" type="b2602c69:ProjectViewProjectNode" />
-              <item name="External Libraries" type="cb654da1:ExternalLibrariesNode" />
-              <item name="rspec-support (v3.8.0, RVM: ruby-2.4.1) [gem]" type="70bed36:NamedLibraryElementNode" />
-              <item name="lib" type="462c0819:PsiDirectoryNode" />
-              <item name="rspec" type="462c0819:PsiDirectoryNode" />
             </path>
           </expand>
           <select />
@@ -472,44 +480,44 @@
       <workItem from="1544352160430" duration="71709000" />
       <workItem from="1545125099787" duration="61974000" />
       <workItem from="1546355195475" duration="38775000" />
-      <workItem from="1546934758109" duration="16439000" />
+      <workItem from="1546934758109" duration="30828000" />
     </task>
     <servers />
   </component>
   <component name="TestHistory">
-    <history-entry file="YotpoKafka_raises_error_when_trying_to_enqueue_without_an_active_job__kafka_gem - 2019.01.08 at 16h 41m 45s.xml">
-      <configuration name="YotpoKafka raises error when trying to enqueue without an active job: kafka_gem" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka_raises_error_when_trying_to_enqueue_without_an_active_job__kafka_gem - 2019.01.08 at 16h 41m 55s.xml">
-      <configuration name="YotpoKafka raises error when trying to enqueue without an active job: kafka_gem" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 16h 42m 00s.xml">
-      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 16h 42m 44s.xml">
-      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka_raises_error_when_trying_to_enqueue_without_an_active_job__kafka_gem - 2019.01.08 at 16h 43m 43s.xml">
-      <configuration name="YotpoKafka raises error when trying to enqueue without an active job: kafka_gem" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka_raises_error_when_trying_to_enqueue_without_an_active_job__kafka_gem - 2019.01.08 at 16h 44m 17s.xml">
-      <configuration name="YotpoKafka raises error when trying to enqueue without an active job: kafka_gem" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka_raises_error_when_trying_to_enqueue_without_an_active_job__kafka_gem - 2019.01.08 at 16h 44m 39s.xml">
-      <configuration name="YotpoKafka raises error when trying to enqueue without an active job: kafka_gem" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
-    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 16h 46m 44s.xml">
-      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
-    </history-entry>
     <history-entry file="YotpoKafka_raises_error_when_trying_to_enqueue_without_an_active_job__kafka_gem - 2019.01.08 at 16h 47m 03s.xml">
       <configuration name="YotpoKafka raises error when trying to enqueue without an active job: kafka_gem" configurationId="RSpecRunConfigurationType" />
     </history-entry>
     <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 16h 48m 22s.xml">
       <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
     </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 17h 00m 53s.xml">
+      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 17h 00m 58s.xml">
+      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.08 at 17h 01m 31s.xml">
+      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem - 2019.01.08 at 17h 01m 39s.xml">
+      <configuration name="YotpoKafka: kafka_gem" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.10 at 12h 07m 05s.xml">
+      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.10 at 12h 07m 30s.xml">
+      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem_(1) - 2019.01.10 at 12h 07m 40s.xml">
+      <configuration name="YotpoKafka: kafka_gem (1)" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
+    <history-entry file="YotpoKafka__kafka_gem - 2019.01.10 at 12h 08m 05s.xml">
+      <configuration name="YotpoKafka: kafka_gem" configurationId="RSpecRunConfigurationType" />
+    </history-entry>
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="240858000" />
+    <option name="totallyTimeSpent" value="255247000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="-851" y="1103" width="1440" height="877" extended-state="6" />
@@ -518,15 +526,15 @@
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Event Log" order="11" sideWeight="0.23104435" side_tool="true" weight="0.38044915" />
       <window_info anchor="bottom" id="Database Changes" order="8" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Run" order="2" sideWeight="0.49570817" weight="0.32893" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" sideWeight="0.49570817" visible="true" weight="0.32893" />
       <window_info anchor="bottom" id="Version Control" order="10" />
       <window_info anchor="bottom" id="Terminal" order="9" />
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.23390558" />
+      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.19313304" />
       <window_info anchor="bottom" id="Docker" order="7" />
       <window_info anchor="right" id="Database" order="3" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32893" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" sideWeight="0.76895565" visible="true" weight="0.38044915" />
+      <window_info anchor="bottom" id="Debug" order="3" sideWeight="0.76895565" weight="0.38044915" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -561,22 +569,12 @@
         </line-breakpoint>
         <line-breakpoint enabled="true" type="ruby-line">
           <url>file://$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb</url>
-          <line>71</line>
+          <line>70</line>
           <option name="timeStamp" value="110" />
         </line-breakpoint>
         <line-breakpoint enabled="true" type="ruby-line">
-          <url>file://$PROJECT_DIR$/spec/producer_spec.rb</url>
-          <line>56</line>
-          <option name="timeStamp" value="140" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="ruby-line">
-          <url>file://$PROJECT_DIR$/spec/producer_spec.rb</url>
-          <line>60</line>
-          <option name="timeStamp" value="141" />
-        </line-breakpoint>
-        <line-breakpoint enabled="true" type="ruby-line">
           <url>file://$PROJECT_DIR$/lib/yotpo_kafka/producer.rb</url>
-          <line>78</line>
+          <line>80</line>
           <option name="timeStamp" value="142" />
         </line-breakpoint>
       </breakpoints>
@@ -621,12 +619,12 @@
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string />
+        <expression-string>expect{@message['kafka_header']['num_retries']}.to eq(consumer.num_retries)</expression-string>
         <language-id>ruby</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string />
+        <expression-string>@message['kafka_header']['num_retries'] == consumer.num_retries</expression-string>
         <language-id>ruby</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
@@ -663,13 +661,6 @@
     </expressions>
   </component>
   <component name="editorHistoryManager">
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-2.4.1/gems/ruby-kafka-0.5.3/lib/kafka/consumer.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="303">
-          <caret line="40" column="8" selection-start-line="40" selection-start-column="8" selection-end-line="40" selection-end-column="8" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/tasks/kafka.rake" />
     <entry file="file://$APPLICATION_HOME_DIR$/rubystubs24/env.rb">
       <provider selected="true" editor-type-id="text-editor">
@@ -819,13 +810,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/.rvm/gems/ruby-2.4.1/gems/activejob-4.2.10/lib/active_job/core.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="147">
-          <caret line="51" column="10" selection-start-line="51" selection-start-column="10" selection-end-line="51" selection-end-column="10" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.rvm/gems/ruby-2.4.1/gems/activejob-4.2.10/lib/active_job/queue_adapters/inline_adapter.rb">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="255">
@@ -896,13 +880,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="164">
-          <caret line="100" selection-start-line="100" selection-end-line="100" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$USER_HOME$/.rvm/gems/ruby-2.4.1/gems/rspec-expectations-3.8.2/lib/rspec/expectations/expectation_target.rb">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="177">
@@ -914,13 +891,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="304">
           <caret line="602" selection-start-line="602" selection-end-line="602" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/spec/consumer_spec.rb">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="461">
-          <caret line="39" selection-start-line="39" selection-end-line="39" />
         </state>
       </provider>
     </entry>
@@ -973,24 +943,55 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/spec/producer_spec.rb">
+    <entry file="file://$PROJECT_DIR$/config/initializers/active_job.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="188">
-          <caret line="55" column="32" lean-forward="true" selection-start-line="55" selection-start-column="32" selection-end-line="55" selection-end-column="32" />
+        <state relative-caret-position="60">
+          <caret line="4" column="13" selection-start-line="4" selection-start-column="13" selection-end-line="4" selection-end-column="13" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/.rvm/gems/ruby-2.4.1/gems/activejob-4.2.10/lib/active_job/core.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="125">
+          <caret line="51" column="10" selection-start-line="51" selection-start-column="10" selection-end-line="51" selection-end-column="10" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/lib/yotpo_kafka/producer.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="346">
-          <caret line="30" column="32" lean-forward="true" selection-start-line="30" selection-start-column="29" selection-end-line="30" selection-end-column="35" />
+        <state relative-caret-position="-768">
+          <caret line="20" column="57" selection-start-line="20" selection-start-column="53" selection-end-line="20" selection-end-column="57" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/config/initializers/active_job.rb">
+    <entry file="file://$PROJECT_DIR$/spec/producer_spec.rb">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="60">
-          <caret line="4" column="13" selection-start-line="4" selection-start-column="13" selection-end-line="4" selection-end-column="13" />
+        <state relative-caret-position="90">
+          <caret line="6" column="20" lean-forward="true" selection-start-line="6" selection-start-column="20" selection-end-line="6" selection-end-column="20" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/lib/yotpo_kafka/consumer.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="188">
+          <caret line="55" column="113" selection-start-line="55" selection-start-column="113" selection-end-line="55" selection-end-column="113" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/spec/consumer_spec.rb">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="315">
+          <caret line="21" lean-forward="true" selection-start-line="21" selection-end-line="21" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="357">
+            <caret line="43" lean-forward="true" selection-start-line="43" selection-end-line="43" />
+          </first_editor>
+          <second_editor />
         </state>
       </provider>
     </entry>

@@ -18,7 +18,7 @@ module YotpoKafka
       @client_id = params[:client_id] || 'yotpo-kafka'
       @active_job = params[:active_job] || nil
       @red_cross = params[:red_cross] || nil
-      @logstash_logger = params[:logstash_logger] || false
+      @logstash_logger = params[:logstash_logger] || true
       config()
     rescue => error
       log_error("Producer failed to initialize", {error: error})
@@ -52,27 +52,28 @@ module YotpoKafka
     def publish_messages(messages)
       producer.publish_list(messages)
       YotpoKafka::Producer.producer.kafka_client.close
-      RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) unless @use_red_cross.nil?
+      RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) unless @red_cross.nil?
     rescue => error
       log_error("Publish failed", {error: error})
-      RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) unless @use_red_cross.nil?
+      RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) unless @red_cross.nil?
       messages.each do |message|
         params = HashWithIndifferentAccess.new(message)
-        if @num_retries > 0
-          enqueue(params[:payload],
-                  params[:topic],
-                  params[:key],
-                  params[:msg_id],
-                  error)
-        elsif @num_retries == 0
-          enqueue(params[:payload],
-                  "#{params[:topic]}_fatal",
-                  params[:key],
-                  params[:msg_id],
-                  error)
+        if @active_job
+          if @num_retries > 0
+            enqueue(params[:payload],
+                    params[:topic],
+                    params[:key],
+                    params[:msg_id],
+                    error)
+          elsif @num_retries == 0
+            enqueue(params[:payload],
+                    "#{params[:topic]}_fatal",
+                    params[:key],
+                    params[:msg_id],
+                    error)
+          end
         end
       end
-      raise 'Publish failed'
     end
 
     def enqueue(payload, topic, key, msg_id, error)
@@ -88,10 +89,9 @@ module YotpoKafka
                 'key' => key,
                 'msg_id' => msg_id,
                 'exception_message' => error}
-      ProducerWorker.set(wait: @gap_between_retries).perform_later(params.to_json)
+      ProducerWorker.set(wait: @gap_between_retries.second).perform_later(params.to_json)
     rescue => error
       log_error("Enqueue failed", {error: error})
-      raise 'Enqueue failed'
     end
   end
 end
