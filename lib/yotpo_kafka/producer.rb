@@ -19,13 +19,13 @@ module YotpoKafka
       @active_job = params[:active_job] || nil
       @red_cross = params[:red_cross] || nil
       @logstash_logger = params[:logstash_logger] || true
-      config()
+      config
     rescue => error
       log_error("Producer failed to initialize", {error: error})
       raise 'Producer failed to initialize'
     end
 
-    def config()
+    def config
       YotpoKafka::RedCrossKafka.config_red_cross(@red_cross) unless @red_cross.nil?
       YotpoKafka::YLoggerKafka.config(@logstash_logger)
       YotpoKafka::ActiveJobs.config(@active_job)

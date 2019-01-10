@@ -15,22 +15,22 @@ module YotpoKafka
       @red_cross = params['red_cross'] || nil
       @logstash_logger = params['logstash_logger'] || true
       @active_job = params['active_job'] || nil
-      config()
+      config
     rescue => error
       log_error("Could not initialize", error)
       raise 'Could not initialize'
     end
 
     def self.start_consumer(params)
+      YotpoKafka::YLoggerKafka.config(params[:logstash_logger] || true)
       YotpoKafka::ConsumerRunner.run(params)
-      YotpoKafka::YLoggerKafka.config(params[:logstash_logger] || false)
       log_info("Configured successfully")
     rescue => error
       log_error("Could not subscribe as a consumer",{ handler: params[:handler].to_s}, exception: error)
       raise 'Could not subscribe as a consumer'
     end
 
-    def config()
+    def config
       YotpoKafka::RedCrossKafka.config(@red_cross)
       YotpoKafka::YLoggerKafka.config(@logstash_logger)
       YotpoKafka::ActiveJobs.config(@active_job)
@@ -102,7 +102,7 @@ module YotpoKafka
       return nil
     end
 
-    def get_broker()
+    def get_broker
       return Phobos.config.kafka.seed_brokers[0]
     end
   end
