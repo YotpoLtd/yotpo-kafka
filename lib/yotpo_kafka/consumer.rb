@@ -15,6 +15,7 @@ module YotpoKafka
       @red_cross = params['red_cross'] || nil
       @logstash_logger = params['logstash_logger'] || true
       @active_job = params['active_job'] || nil
+      @kafka_header = nil
       config
     rescue => error
       log_error("Could not initialize", error)
@@ -45,6 +46,7 @@ module YotpoKafka
 
     def consume(payload, metadata)
       parsed_payload = JSON.parse(payload)
+      @kafka_header = parsed_payload['kafka_header'] || nil
       consume_message(parsed_payload.except!('kafka_header'))
       log_info( "Message consumed", { topic: metadata[:topic],
                                       handler: metadata[:handler].to_s})

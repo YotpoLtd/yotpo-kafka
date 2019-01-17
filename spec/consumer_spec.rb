@@ -34,12 +34,6 @@ describe YotpoKafka do
     expect{Helpers::ConsumerHandler.start_consumer(params)}.to_not raise_error
   end
 
-  it 'raises error when message is not a json' do
-    metadata = {topic: @topic, handler: Helpers::ConsumerHandler }
-    consumer = Helpers::ConsumerHandler.new({})
-    expect{consumer.consume(@message, metadata)}.to raise_error(TypeError)
-  end
-
   it 'does not raise error when message is not a json' do
     metadata = {topic: @topic, handler: Helpers::ConsumerHandler }
     consumer = Helpers::ConsumerHandler.new({})

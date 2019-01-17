@@ -16,11 +16,17 @@ And then execute:
 new_producer = YotpoKafka::Producer.new({ kafka_broker_url: BROKER})
 new_producer.publish(TOPIC_NAME, MESSAGE, KEY = nil, MSG_ID = nil)
 ```
-BROKER = Our Kafka Server
-TOPIC_NAME = Name of the topic to publish to
-MESSAGE = Message to publish, should be hash
-KEY = If messages should be published synchronic, a key should be given. Default: nil
-MSG_ID = Message header will include a msg_id. Default: generated unique ID
+* BROKER = Our Kafka Server
+* TOPIC_NAME = Name of the topic to publish to
+* MESSAGE = Message to publish, should be hash
+* KEY = Messages with same key will go to same partition. Order within
+        a partition is ensured and therefore all messages with same key
+        will be sent synchronicly. Advised to use when order of messages
+        is required.Default: nil
+* MSG_ID = Message header will include a msg_id. In member of instance
+            called "kafka_header" this msg_id can be found in consumer
+            side. Also timestamp and broker url will be part of this header.
+            Default: generated unique ID
 
 Additional params possible to send when creating new instance of Producer:
 * _**gap_between_retries:**_: In seconds. Default is 0
@@ -28,7 +34,9 @@ Additional params possible to send when creating new instance of Producer:
 * _**client_id:**_: Unique identifier of the publisher. Default is 'yotpo-kafka'
 * _**active_job:**_: Type of job manager (like :resque). Default is nil
 * _**red_cross:**_: Monitoring by red cross. Default is nil
-* _**logstash_logger:**_:  If set to true, will log in Logstash format. Default is true
+* _**logstash_logger:**_:  if set to true, will log in Logstash format. indexing uuid, 
+                            last few backtrace lines as context,
+                            tag, and an extra_data hash provided to the logger by the user.. Default is true
 
 Retry Mechanism of Producer: 
 In case producer fails to produce for any reason (and defined an Active Job) a job will be sent
@@ -51,10 +59,10 @@ desc 'New Consumer'
     end
   end
 ```
-BROKER = Our Kafka Server
-TOPIC_NAME = Name of the topic to publish to
-GROUP_ID = Consumer will be part of consumer group with given id
-CONSUMER_CLASS = Class that handles the received messages
+* BROKER = Our Kafka Server
+* TOPIC_NAME = Name of the topic to publish to
+* GROUP_ID = Consumer will be part of consumer group with given id
+* CONSUMER_CLASS = Class that handles the received messages
 
 Retry Mechanism of Consumer:
 In case there is an exception in consuming message (and defined an Active Job), there will be
@@ -97,38 +105,30 @@ Additional params possible to send when creating new instance of Consumer:
   * `Ruby >= 2.2`
   * source 'https://yotpo.jfrog.io/yotpo/api/gems/gem-virt/' in Gemfile
   
-  #### How to install Kafka locally for debugging needs:
-  1. brew cask install java8
-  2. brew install kafka
-  
-  3. vim /usr/local/etc/kafka/server.properties
-  Here uncomment the server settings and update the value from:
-  
-  listeners=PLAINTEXT://:9092
-  to
-  
-                Socket Server Settings 
-  The address the socket server listens on. It will get the value returned from 
-  java.net.InetAddress.getCanonicalHostName() if not configured.
-    FORMAT:
-      listeners = listener_name://host_name:port
-    EXAMPLE:
-      listeners = PLAINTEXT://your.host.name:9092
-  listeners=PLAINTEXT://localhost:9092
-  and restart the server and it will work great.
-  
-  4. 
-  zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties
-  kafka-server-start /usr/local/etc/kafka/server.properties
-  
-  5. Create Kafka Topic:
-  kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
-  
-  6. Initialize Producer console:
-  kafka-console-producer --broker-list localhost:9092 --topic test
-  
-  7. Initialize Consumer console:
-  kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
+#### How to install Kafka locally for debugging needs:
+1. brew cask install java8
+2. brew install kafka
+
+3. vim /usr/local/etc/kafka/server.properties
+Here uncomment the server settings and update the value from:
+
+listeners=PLAINTEXT://:9092
+to
+listeners = PLAINTEXT://your.host.name:9092
+and restart the server and it will work great.
+
+4. 
+zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties
+kafka-server-start /usr/local/etc/kafka/server.properties
+
+5. Create Kafka Topic:
+kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
+
+6. Initialize Producer console:
+kafka-console-producer --broker-list localhost:9092 --topic test
+
+7. Initialize Consumer console:
+kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
 
 ## Contributing
 
