@@ -33,14 +33,14 @@ module YotpoKafka
     end
 
 
-    def publish(topic, message, key = nil, msg_id = nil)
+    def publish(topics, message, key = nil, msg_id = nil)
       if message['kafka_header'].nil?
         message['kafka_header'] = {timestamp: DateTime.now,
                                    msg_id: msg_id || SecureRandom.uuid,
                                    kafka_broker_url: @kafka_broker_url}
       end
-      topics = Array(topic)
-      topics.each do |topic|
+      topics_arr = Array(topics)
+      topics_arr.each do |topic|
         publish_messages([{ topic: topic, payload: message.to_json, key: key }])
       end
     end

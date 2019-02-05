@@ -17,7 +17,7 @@ module YotpoKafka
     def self.get_listeners(params)
       listeners = []
       topics = Array(params[:topics])
-      group_ids = get_group_ids(topics, params)
+      group_ids = get_group_ids(topics, params[:group_ids])
 
       topics.zip(group_ids).each do |topic, group_id|
         listeners_arr = get_listeners_for_retires(topic, group_id.to_s)
@@ -42,10 +42,12 @@ module YotpoKafka
       return listeners
     end
 
-    def self.get_group_ids(topics, params)
-      group_ids = Array(params[:group_ids])
-      if topics.length == group_ids.length
-        return group_ids
+    def self.get_group_ids(topics, group_ids)
+      group_ids_arr = Array(group_ids)
+      if topics.length == group_ids_arr.length
+        return group_ids_arr
+      elsif group_ids_arr.length > 1
+        raise 'number of group ids should be 1 or as many topics provided'
       end
 
       counter = 1
@@ -54,10 +56,10 @@ module YotpoKafka
         if topic == topics.first
           next
         end
-        group_ids.insert(counter, "#{group_ids.first}_#{counter}")
+        group_ids_arr.insert(counter, "#{group_ids_arr.first}_#{counter}")
         counter += 1
       end
-      return group_ids
+      return group_ids_arr
     end
 
     def self.get_unique_client_id(handler, group_ids)
