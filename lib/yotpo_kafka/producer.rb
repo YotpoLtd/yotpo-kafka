@@ -39,7 +39,10 @@ module YotpoKafka
                                    msg_id: msg_id || SecureRandom.uuid,
                                    kafka_broker_url: @kafka_broker_url}
       end
-      publish_messages([{ topic: topic, payload: message.to_json, key: key }])
+      topics = Array(topic)
+      topics.each do |topic|
+        publish_messages([{ topic: topic, payload: message.to_json, key: key }])
+      end
     end
 
     def publish_multiple(messages)
