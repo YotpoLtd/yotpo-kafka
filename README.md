@@ -17,7 +17,7 @@ new_producer = YotpoKafka::Producer.new({ kafka_broker_url: BROKER})
 new_producer.publish(TOPIC_NAME, MESSAGE, KEY = nil, MSG_ID = nil)
 ```
 * BROKER = Our Kafka Server
-* TOPIC_NAME = Name of the topic to publish to
+* TOPIC_NAME = Name of the topic to publish to (can also be an array of topics)
 * MESSAGE = Message to publish, should be hash
 * KEY = Messages with same key will go to same partition. Order within
         a partition is ensured and therefore all messages with same key
@@ -51,8 +51,8 @@ desc 'New Consumer'
   task :new_consumer do
     begin
       params = {kafka_broker_url: BROKER,
-                topic: TOPIC_NAME,
-                group_id: GROUP_ID,
+                topics: TOPIC_NAME,
+                group_ids: GROUP_ID,
                 handler: CONSUMER_CLASS
       }
       NewConsumer.start_consumer(params)
@@ -60,8 +60,8 @@ desc 'New Consumer'
   end
 ```
 * BROKER = Our Kafka Server
-* TOPIC_NAME = Name of the topic to publish to
-* GROUP_ID = Consumer will be part of consumer group with given id
+* TOPIC_NAME = Name of the topic to publish to (or an array of topics)
+* GROUP_ID = Consumer will be part of consumer group with given id (should be one or exactly as many topics you give)
 * CONSUMER_CLASS = Class that handles the received messages
 
 Retry Mechanism of Consumer:
