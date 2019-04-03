@@ -10,100 +10,73 @@ gem 'yotpo_kafka', github: 'YotpoLtd/yotpo-kafka'
 
 And then execute:
     $ bundle install
+
+Define BROKER_URL environment variable
+
 ## Creating a producer:
 
 ```ruby
-new_producer = YotpoKafka::Producer.new({ kafka_broker_url: BROKER})
-new_producer.publish(TOPIC_NAME, MESSAGE, KEY = nil, MSG_ID = nil)
+producer = Producer.new({ red_cross: @red_cross, client_id: @group_id, logstash_logger: @logstash_logger })
+producer.publish(value, headers, topic, key)
 ```
-* BROKER = Our Kafka Server
-* TOPIC_NAME = Name of the topic to publish to (can also be an array of topics)
-* MESSAGE = Message to publish, should be hash
-* KEY = Messages with same key will go to same partition. Order within
+
+* topic = Name of the topic to publish to (can also be an array of topics)
+* value = byte array to publish
+* headers = kafka headers
+* key = Messages with same key will go to same partition. Order within
         a partition is ensured and therefore all messages with same key
         will be sent synchronicly. Advised to use when order of messages
         is required.Default: nil
-* MSG_ID = Message header will include a msg_id. In member of instance
-            called "kafka_header" this msg_id can be found in consumer
-            side. Also timestamp and broker url will be part of this header.
-            Default: generated unique ID
-
-Additional params possible to send when creating new instance of Producer:
-* _**gap_between_retries:**_: In seconds. Default is 0
-* _**num_retries:**_: Num of retries before failure is sent to fatal topic. Default is 0
-* _**client_id:**_: Unique identifier of the publisher. Default is 'yotpo-kafka'
-* _**active_job:**_: Type of job manager (like :resque). Default is nil
 * _**red_cross:**_: Monitoring by red cross. Default is nil
 * _**logstash_logger:**_:  if set to true, will log in Logstash format. indexing uuid, 
                             last few backtrace lines as context,
                             tag, and an extra_data hash provided to the logger by the user.. Default is true
 
-Retry Mechanism of Producer: 
-In case producer fails to produce for any reason (and defined an Active Job) a job will be sent
-to relevant Jobs manager. It will try to republish the message after waiting gap_between_retries seconds
-as defined. Once number of retries is 0, it will try to publish the message to topic named TOPIC_NAME_fatal. 
-
 ## Creating a consumer:
 A consumer will be defined in a rake task as follows:
 
 ```ruby
-desc 'New Consumer'
+  desc 'New Consumer'
   task :new_consumer do
     begin
-      params = {kafka_broker_url: BROKER,
-                topics: TOPIC_NAME,
-                group_ids: GROUP_ID,
-                handler: CONSUMER_CLASS
-      }
-      NewConsumer.start_consumer(params)
+      consumer = Consumers::DummyConsumer.new({
+                                                seconds_between_retries: 10,
+                                                num_retries: 3,
+                                                topics: 'rubytest',
+                                                group_id: 'service.consumer_test_topics.consumer',
+                                                handler: Consumers::DummyConsumer
+                                              })
+      consumer.start_consumer
     end
   end
 ```
-* BROKER = Our Kafka Server
-* TOPIC_NAME = Name of the topic to publish to (or an array of topics)
-* GROUP_ID = Consumer will be part of consumer group with given id (should be one or exactly as many topics you give)
-* CONSUMER_CLASS = Class that handles the received messages
-
-Retry Mechanism of Consumer:
-In case there is an exception in consuming message (and defined an Active Job), there will be
-reproduction of the message to a topic called: TOPIC_NAME_GROUP_ID_failures. 
-When retry is 0, message will be sent to a topic called: TOPIC_NAME_GROUP_ID_failures.
-
-#Defining the handler (Consumer class):
-CONSUMER_CLASS should inherit from YotpoKafka::Consumer 
-and define the following (with option to define params):
-
-```ruby
-class UpdatedTokenConsumer < YotpoKafka::Consumer
-  REQUIRED_PARAMS = %i(app_key token invalidated_at).freeze
-
-  def initialize(params = {})
-    params = {'gap_between_retries' =>  2,
-              'num_retries' =>  2,
-              'logstash_logger' => false,
-              'active_job' => :resque}
-    super(params)
-  end
-
-  def consume_message(message)
-    #do_something_with_message
-  end
-end
-```
-Additional params possible to send when creating new instance of Consumer:
+* topics = Name of the topic to publish to (or an array of topics)
+* group_id = Consumer will be part of consumer group with given id (should be one or exactly as many topics you give)
+* handler = Class that handles the consumed messages payload
 * _**gap_between_retries:**_: In seconds. Default is 0
 * _**num_retries:**_: Num of retries of reconsuming message in case of exception. 
                        When retry is 0, failure is sent to fatal topic. Default is 0
-* _**client_id:**_: Unique identifier of the publisher. Default is 'yotpo-kafka'
-* _**active_job:**_: Type of job manager (like :resque). Default is nil
 * _**red_cross:**_: Monitoring by red cross. Default is nil
 * _**logstash_logger:**_:  If set to true, will log in Logstash format. Default is true
 
+## Retry Mechanism of Consumer:
+Check [kafka-retry-service](https://github.com/YotpoLtd/kafka-retry-service) for more details 
 
-  ### Dependencies
-  
-  * `Ruby >= 2.2`
-  * source 'https://yotpo.jfrog.io/yotpo/api/gems/gem-virt/' in Gemfile
+#Defining the handler (Consumer class):
+CONSUMER_CLASS should inherit from YotpoKafka::Consumer
+
+```ruby
+  class DummyConsumer < YotpoKafka::Consumer
+    def initialize(params)
+      super(params)
+    end
+
+    def consume_message(message)
+      puts message
+      raise "error"
+    end
+  end
+```
   
 #### How to install Kafka locally for debugging needs:
 1. brew cask install java8

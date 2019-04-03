@@ -1,12 +1,12 @@
+ENV['BROKER_URL'] = '192.0.0.1:9092'
+
 require 'spec_helper'
 
 describe YotpoKafka do
   before(:each) do
-    # set BROKER_URL env var and run kafka and consumer in advance
     @topic = 'test_topic'
     @client_id = 'kafka-test'
     @group_id = 1
-    @active_job = :resque
     @message = { test_message: 'testing kafka' }
     @error = 'error'
   end
@@ -16,8 +16,7 @@ describe YotpoKafka do
                group_id: @group_id,
                handler: nil
     }
-    consumer = Helpers::ConsumerHandler.new(params)
-    expect { consumer.start_consumer }.to raise_error(RuntimeError)
+    expect { Helpers::ConsumerHandler.new(params) }.to raise_error(ArgumentError)
   end
 
   it 'config a consumer with handler expects no runtime error' do

@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name = 'yotpo_kafka'
-  s.version = '1.0.0'
-  s.date = '2018-11-28'
+  s.version = '1.0.1'
+  s.date = '2019-04-03'
   s.authors = 'Dana'
-  s.summary = 'yotpo_kafka is the best'
+  s.summary = 'yotpo-kafka: encapsulate ruby-kafka library with consume retry mechanism'
   s.files = ['lib/yotpo_kafka.rb']
   s.require_paths = ['lib']
 

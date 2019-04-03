@@ -1,12 +1,12 @@
+ENV['BROKER_URL'] = '192.0.0.1:9092'
+
 require 'spec_helper'
 
 describe YotpoKafka do
   before(:each) do
     @topic = 'test_topic'
-    @kafka_broker_url = '127.0.0.1:9092'
     @client_id = 'kafka-test'
     @num_retries = 1
-    @active_job = :resque
     @message = { test_message: 'testing kafka' }
     @error = 'error'
   end

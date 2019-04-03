@@ -1,0 +1,7 @@
+language: ruby
+stages:
+  - release
+jobs:
+  include:
+    - stage: release
+      script: ./build/release.sh
