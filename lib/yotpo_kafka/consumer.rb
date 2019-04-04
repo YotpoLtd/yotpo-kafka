@@ -20,13 +20,15 @@ module YotpoKafka
                                })
       config
     rescue => error
-      log_error('Could not initialize', error)
+      log_error('Could not initialize',
+                exception: error.message,
+                log_tag: 'yotpo-ruby-kafka')
       raise 'Could not initialize'
     end
 
     def start_consumer
       YotpoKafka::YLoggerKafka.config(@logstash_logger || true)
-      @topics = add_failure_topics
+      @topics += [build_fail_topic]
       @topics.each { |t| @consumer.subscribe(t) }
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
@@ -41,29 +43,22 @@ module YotpoKafka
       end
     rescue => error
       log_error('Consumer failed',
-                exception: error,
-                log_tag: 'yotpo-kafka')
-      # graceful shutdown.. restart service to consume again
+                exception: error.message,
+                log_tag: 'yotpo-ruby-kafka')
     end
 
-    def add_failure_topics
-      all_topics = []
-      @topics.each { |t| all_topics += [build_fail_topic(t), t] }
-      all_topics
-    end
-
-    def build_fail_topic(topic)
+    def build_fail_topic
       return @group_id + '.failures'
     end
 
     def handle_error(message, error)
-      if !message.headers['retry']
+      unless message.headers['retry']
         message.headers['retry'] = {
           CurrentAttempt: @num_retries,
           NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
           Error: error.to_s,
           MainTopic: message.topic,
-          FailuresTopic: build_fail_topic(message.topic),
+          FailuresTopic: build_fail_topic,
           delayIntervalSec: @seconds_between_retries,
         }.to_json
       end
@@ -73,21 +68,21 @@ module YotpoKafka
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.to_s,
         MainTopic: message.topic,
-        FailuresTopic: build_fail_topic(message.topic),
+        FailuresTopic: build_fail_topic,
       }
       if retry_hdr[:CurrentAttempt] > 0
         message.headers['retry'] = retry_hdr.to_json
-        log_info('Message was not consumed - wait for retry', { topic: message.topic })
+        log_info('Message was not consumed - wait for retry', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
         if @seconds_between_retries == 0
-          @producer.publish(message.value, message.headers, build_fail_topic(message.topic), message.key)
+          @producer.publish(message.value, build_fail_topic, message.headers, message.key)
         else
-          @producer.publish(message.value, message.headers,'retry_handler', message.key)
+          @producer.publish(message.value, YotpoKafka.retry_topic, message.headers, message.key)
         end
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         message.headers['retry'] = retry_hdr.to_json
-        log_info('Message was not consumed - sent to fatal', { topic: message.topic })
-        @producer.publish(message.value, message.headers, 'fatal', message.key)
+        log_info('Message was not consumed - sent to fatal', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
+        @producer.publish(message.value, YotpoKafka.fatal_topic, message.headers, message.key)
       end
     end
 
@@ -95,7 +90,9 @@ module YotpoKafka
       YotpoKafka::RedCrossKafka.config(@red_cross)
       YotpoKafka::YLoggerKafka.config(@logstash_logger)
     rescue => error
-      log_error('Could not config', exception: error)
+      log_error('Could not config',
+                exception: error.message,
+                log_tag: 'yotpo-ruby-kafka')
       raise 'Could not config'
     end
 

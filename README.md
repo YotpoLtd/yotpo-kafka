@@ -17,7 +17,7 @@ Define BROKER_URL environment variable
 
 ```ruby
 producer = Producer.new({ red_cross: @red_cross, client_id: @group_id, logstash_logger: @logstash_logger })
-producer.publish(value, headers, topic, key)
+producer.publish(value, topic, headers, key)
 ```
 
 * topic = Name of the topic to publish to (can also be an array of topics)

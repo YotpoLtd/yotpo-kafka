@@ -15,7 +15,9 @@ module YotpoKafka
       @logstash_logger = params[:logstash_logger] || true
       config
     rescue => error
-      log_error('Producer failed to initialize', error: error)
+      log_error('Producer failed to initialize',
+                exception: error.message,
+                log_tag: 'yotpo-ruby-kafka')
       raise 'Producer failed to initialize'
     end
 
@@ -24,7 +26,7 @@ module YotpoKafka
       YotpoKafka::YLoggerKafka.config(@logstash_logger)
     end
 
-    def publish(value, headers, topic, key = nil)
+    def publish(value, topic, headers=nil, key = nil)
       @producer.produce(value, key: key, headers: headers, topic: topic)
       @producer.deliver_messages
     end
@@ -33,10 +35,12 @@ module YotpoKafka
       messages.each do |message|
         publish(message.topic, message.payload, message.key)
       end
-      log_info('Messages published successfully')
+      log_info('Messages published successfully', log_tag: 'yotpo-ruby-kafka')
       RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) unless @red_cross.nil?
     rescue => error
-      log_error('Publish failed', error: error)
+      log_error('Publish failed',
+                exception: error.message,
+                log_tag: 'yotpo-ruby-kafka')
       RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) unless @red_cross.nil?
     end
   end

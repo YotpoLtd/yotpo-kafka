@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -e
 
-gem install bundler
 bundle config yotpo.jfrog.io $JFROG_USER:$JFROG_PASSWORD
 bundle exec rake build
 
