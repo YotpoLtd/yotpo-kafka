@@ -1,7 +1,7 @@
 Gem::Specification.new do |s|
   s.name = 'yotpo_kafka'
-  s.version = '1.0.1'
-  s.date = '2019-04-03'
+  s.version = '1.0.2'
+  s.date = '2019-04-04'
   s.authors = 'Dana'
   s.summary = 'yotpo-kafka: encapsulate ruby-kafka library with consume retry mechanism'
   s.files = ['lib/yotpo_kafka.rb']
