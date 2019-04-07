@@ -7,6 +7,7 @@ module YotpoKafka
 
     def initialize(params)
       @seconds_between_retries = params[:seconds_between_retries] || 0
+      @listen_to_failures = params[:listen_to_failures] || true
       @num_retries = params[:num_retries] || 0
       @red_cross = params[:red_cross] || nil
       @logstash_logger = params[:logstash_logger] || false
@@ -28,8 +29,10 @@ module YotpoKafka
 
     def start_consumer
       YotpoKafka::YLoggerKafka.config(@logstash_logger || true)
-      @topics += [build_fail_topic]
-      @topics.each { |t| @consumer.subscribe(t) }
+      @topics.each do |t|
+        @consumer.subscribe(t)
+        @consumer.subscribe(build_fail_topic(t))
+      end
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
         begin
@@ -47,8 +50,10 @@ module YotpoKafka
                 log_tag: 'yotpo-ruby-kafka')
     end
 
-    def build_fail_topic
-      return @group_id + '.failures'
+    def build_fail_topic(main_topic)
+      main_topic.gsub!('.', '_')
+      group = @group_id.gsub('.', '_')
+      return main_topic + '.' + group + '.failures'
     end
 
     def handle_error(message, error)
@@ -58,7 +63,7 @@ module YotpoKafka
           NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
           Error: error.to_s,
           MainTopic: message.topic,
-          FailuresTopic: build_fail_topic,
+          FailuresTopic: build_fail_topic(message.topic),
           delayIntervalSec: @seconds_between_retries,
         }.to_json
       end
@@ -67,22 +72,22 @@ module YotpoKafka
         CurrentAttempt: parsed_hdr['CurrentAttempt'] - 1,
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.to_s,
-        MainTopic: message.topic,
-        FailuresTopic: build_fail_topic,
+        MainTopic: parsed_hdr['MainTopic'],
+        FailuresTopic: parsed_hdr['FailuresTopic'],
       }
       if retry_hdr[:CurrentAttempt] > 0
         message.headers['retry'] = retry_hdr.to_json
         log_info('Message was not consumed - wait for retry', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
         if @seconds_between_retries == 0
-          @producer.publish(message.value, build_fail_topic, message.headers, message.key)
+          @producer.publish(parsed_hdr['FailuresTopic'], message.value, message.headers, message.key)
         else
-          @producer.publish(message.value, YotpoKafka.retry_topic, message.headers, message.key)
+          @producer.publish(YotpoKafka.retry_topic, message.value, message.headers, message.key)
         end
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         message.headers['retry'] = retry_hdr.to_json
         log_info('Message was not consumed - sent to fatal', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
-        @producer.publish(message.value, YotpoKafka.fatal_topic, message.headers, message.key)
+        @producer.publish(YotpoKafka.fatal_topic, message.value, message.headers, message.key)
       end
     end
 

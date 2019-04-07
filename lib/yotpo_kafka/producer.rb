@@ -26,14 +26,14 @@ module YotpoKafka
       YotpoKafka::YLoggerKafka.config(@logstash_logger)
     end
 
-    def publish(value, topic, headers=nil, key = nil)
+    def publish(topic, value, headers=nil, key = nil)
       @producer.produce(value, key: key, headers: headers, topic: topic)
       @producer.deliver_messages
     end
 
-    def publish_multiple(messages)
+    def publish_multiple(topic, messages)
       messages.each do |message|
-        publish(message.topic, message.payload, message.key)
+        publish(topic, message.payload, message.headers, message.key)
       end
       log_info('Messages published successfully', log_tag: 'yotpo-ruby-kafka')
       RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) unless @red_cross.nil?
