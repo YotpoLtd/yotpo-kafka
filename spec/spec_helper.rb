@@ -1,4 +1,3 @@
-
 require 'rspec'
 require 'yotpo_kafka'
 require 'helpers/consumer_helper'

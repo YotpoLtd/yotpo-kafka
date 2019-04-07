@@ -14,13 +14,13 @@ module YotpoKafka
       @topics = Array(params[:topics]) || nil
       @group_id = params[:group_id]
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
-      @producer = Producer.new({
-                                 red_cross: @red_cross,
-                                 client_id: @group_id,
-                                 logstash_logger: @logstash_logger,
-                               })
+      @producer = Producer.new(
+        red_cross: @red_cross,
+        client_id: @group_id,
+        logstash_logger: @logstash_logger
+      )
       config
-    rescue => error
+    rescue StandardError => error
       log_error('Could not initialize',
                 exception: error.message,
                 log_tag: 'yotpo-ruby-kafka')
@@ -39,21 +39,21 @@ module YotpoKafka
           consume_message(message.value)
           log_info('Message consumed', topic: message.topic, log_tag: 'yotpo-kafka')
           RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @red_cross.nil?
-        rescue => error
+        rescue StandardError => error
           RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @red_cross.nil?
           handle_error(message, error)
         end
       end
-    rescue => error
+    rescue StandardError => error
       log_error('Consumer failed',
                 exception: error.message,
                 log_tag: 'yotpo-ruby-kafka')
     end
 
     def build_fail_topic(main_topic)
-      main_topic.gsub!('.', '_')
-      group = @group_id.gsub('.', '_')
-      return main_topic + '.' + group + '.failures'
+      main_topic.tr!('.', '_')
+      group = @group_id.tr('.', '_')
+      main_topic + '.' + group + '.failures'
     end
 
     def handle_error(message, error)
@@ -64,7 +64,7 @@ module YotpoKafka
           Error: error.to_s,
           MainTopic: message.topic,
           FailuresTopic: build_fail_topic(message.topic),
-          delayIntervalSec: @seconds_between_retries,
+          delayIntervalSec: @seconds_between_retries
         }.to_json
       end
       parsed_hdr = JSON.parse(message.headers['retry'])
@@ -73,7 +73,7 @@ module YotpoKafka
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.to_s,
         MainTopic: parsed_hdr['MainTopic'],
-        FailuresTopic: parsed_hdr['FailuresTopic'],
+        FailuresTopic: parsed_hdr['FailuresTopic']
       }
       if retry_hdr[:CurrentAttempt] > 0
         message.headers['retry'] = retry_hdr.to_json
@@ -94,7 +94,7 @@ module YotpoKafka
     def config
       YotpoKafka::RedCrossKafka.config(@red_cross)
       YotpoKafka::YLoggerKafka.config(@logstash_logger)
-    rescue => error
+    rescue StandardError => error
       log_error('Could not config',
                 exception: error.message,
                 log_tag: 'yotpo-ruby-kafka')

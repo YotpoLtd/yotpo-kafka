@@ -14,8 +14,7 @@ describe YotpoKafka do
   it 'config a consumer without handler expects runtime error' do
     params = { topic: @topic,
                group_id: @group_id,
-               handler: nil
-    }
+               handler: nil }
     expect { Helpers::ConsumerHandler.new(params) }.to raise_error(ArgumentError)
   end
 
@@ -23,8 +22,7 @@ describe YotpoKafka do
     allow_any_instance_of(Phobos::CLI::Runner).to receive(:run!)
     params = { topic: @topic,
                group_id: @group_id,
-               handler: Helpers::ConsumerHandler
-    }
+               handler: Helpers::ConsumerHandler }
     consumer = Helpers::ConsumerHandler.new(params)
     expect { consumer.start_consumer }.to_not raise_error
   end
