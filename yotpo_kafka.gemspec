@@ -8,7 +8,6 @@ Gem::Specification.new do |s|
   s.require_paths = ['lib']
 
   s.add_dependency 'ruby-kafka', '0.7.6'
-  s.add_dependency 'ylogger', '0.1.0'
   s.add_dependency 'rake'
   s.add_development_dependency 'rspec'
 end
