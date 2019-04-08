@@ -5,34 +5,36 @@
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'yotpo_kafka', github: 'YotpoLtd/yotpo-kafka'
+gem 'yotpo-ruby-kafka'
 ```
 
-And then execute:
-    $ bundle install
+Define BROKER_URL environment variable (default 127.0.0.1)
 
-Define BROKER_URL environment variable
-
-## Creating a producer:
+### Creating a producer:
 
 ```ruby
 producer = Producer.new({ red_cross: @red_cross, client_id: @group_id, logstash_logger: @logstash_logger })
 producer.publish(value, topic, headers, key)
 ```
 
-* topic = Name of the topic to publish to (can also be an array of topics)
-* value = byte array to publish
-* headers = kafka headers
-* key = Messages with same key will go to same partition. Order within
+* **_value:_** string to publish
+
+* **_topic:_** name of the topic to publish to (can also be an array of topics)
+
+* _**headers:**_ kafka headers map
+
+* _**key:**_ messages with same key will go to same partition. Order within
         a partition is ensured and therefore all messages with same key
         will be sent synchronicly. Advised to use when order of messages
         is required.Default: nil
-* _**red_cross:**_: Monitoring by red cross. Default is nil
+        
+* _**red_cross:**_: monitoring by red cross. Default is false
+
 * _**logstash_logger:**_:  if set to true, will log in Logstash format. indexing uuid, 
                             last few backtrace lines as context,
                             tag, and an extra_data hash provided to the logger by the user.. Default is true
 
-## Creating a consumer:
+### Creating a consumer:
 A consumer will be defined in a rake task as follows:
 
 ```ruby
@@ -43,42 +45,42 @@ A consumer will be defined in a rake task as follows:
                                                 seconds_between_retries: 10,
                                                 num_retries: 3,
                                                 topics: 'rubytest',
-                                                group_id: 'service.consumer_test_topics.consumer',
+                                                group_id: 'consumer_test_topics',
                                                 handler: Consumers::DummyConsumer
                                               })
       consumer.start_consumer
     end
   end
 ```
-* topics = Name of the topic to publish to (or an array of topics)
-* group_id = Consumer will be part of consumer group with given id (should be one or exactly as many topics you give)
-* handler = Class that handles the consumed messages payload
-* _**gap_between_retries:**_: In seconds. Default is 0
-* _**num_retries:**_: Num of retries of reconsuming message in case of exception. 
-                       When retry is 0, failure is sent to fatal topic. Default is 0
-* _**red_cross:**_: Monitoring by red cross. Default is nil
-* _**logstash_logger:**_:  If set to true, will log in Logstash format. Default is true
+* _**topics:**_ name of the topic to publish to (or an array of topics)
 
-## Retry Mechanism of Consumer:
-Check [kafka-retry-service](https://github.com/YotpoLtd/kafka-retry-service) for more details 
+* **_group_id:_** consumer will be part of consumer group with given id (One for all topics)
 
-#Defining the handler (Consumer class):
-CONSUMER_CLASS should inherit from YotpoKafka::Consumer
-
+* **_handler:_** class that handles the consumed messages payload
 ```ruby
-  class DummyConsumer < YotpoKafka::Consumer
-    def initialize(params)
-      super(params)
-    end
+require 'yotpo_kafka'
 
-    def consume_message(message)
-      puts message
-      raise "error"
+module Consumers
+  class ApplicationNameFromCode < YotpoKafka::Consumer
+    def consume_message(_message);
     end
   end
+end
 ```
+* _**seconds_between_retries:**_ in seconds.
+
+* _**num_retries:**_ num of retries of reconsuming message in case of exception. 
+                       When retry is 0, failure is sent to fatal topic. Default is 0
+                       
+* _**red_cross:**_ monitoring by red cross. Default is nil
+
+* _**logstash_logger:**_ if set to true, will log in Logstash format. Default is true
+
+#### Retry Mechanism
+Check [kafka-retry-service](https://github.com/YotpoLtd/kafka-retry-service) for more details 
   
 #### How to install Kafka locally for debugging needs:
+```
 1. brew cask install java8
 2. brew install kafka
 
@@ -90,8 +92,7 @@ to
 listeners = PLAINTEXT://your.host.name:9092
 and restart the server and it will work great.
 
-4. 
-zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties
+4. zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties
 kafka-server-start /usr/local/etc/kafka/server.properties
 
 5. Create Kafka Topic:
@@ -102,15 +103,21 @@ kafka-console-producer --broker-list localhost:9092 --topic test
 
 7. Initialize Consumer console:
 kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
+```
 
-## Contributing
+#### Using dockers
+```
+docker-compose -f docker-compose/docker-compose.yml up -d
+```
+
+### Contributing
 
 Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/yotpo-kafka. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [Contributor Covenant](http://contributor-covenant.org) code of conduct.
 
-## License
+### License
 
 The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
 
-## Code of Conduct
+### Code of Conduct
 
 Everyone interacting in the YotpoTestWorkflow project’s codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/yotpo_test_workflow/blob/master/CODE_OF_CONDUCT.md).
