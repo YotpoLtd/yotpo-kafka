@@ -20,9 +20,9 @@ module YotpoKafka
         logstash_logger: @logstash_logger
       )
       config
-    rescue StandardError => error
+    rescue StandardError => e
       log_error('Could not initialize',
-                exception: error.message,
+                exception: e.message,
                 log_tag: 'yotpo-ruby-kafka')
       raise 'Could not initialize'
     end
@@ -75,10 +75,10 @@ module YotpoKafka
         MainTopic: parsed_hdr['MainTopic'],
         FailuresTopic: parsed_hdr['FailuresTopic']
       }
-      if retry_hdr[:CurrentAttempt] > 0
+      if (retry_hdr[:CurrentAttempt]).positive?
         message.headers['retry'] = retry_hdr.to_json
         log_info('Message was not consumed - wait for retry', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
-        if @seconds_between_retries == 0
+        if @seconds_between_retries.zero?
           @producer.publish(parsed_hdr['FailuresTopic'], message.value, message.headers, message.key)
         else
           @producer.publish(YotpoKafka.retry_topic, message.value, message.headers, message.key)

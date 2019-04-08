@@ -1,4 +1,4 @@
-ENV['BROKER_URL'] = '192.0.0.1:9092'
+ENV['BROKER_URL'] = '127.0.0.1:9092'
 
 require 'spec_helper'
 
