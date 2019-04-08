@@ -58,6 +58,7 @@ PLATFORMS
 DEPENDENCIES
   rake (< 11)
   rspec
+  rspec-core
   rubocop
   rubocop-performance
   ylogger (= 0.1.0)!

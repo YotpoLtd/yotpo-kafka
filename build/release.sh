@@ -6,6 +6,9 @@ gem install bundler
 bundle config yotpo.jfrog.io $JFROG_USER:$JFROG_PASSWORD
 bundle install
 bundle exec rake build
+docker-compose -f ./docker-compose/docker-compose.yml up -d
+sleep 7
+rspec
 
 export RUBYGEMS_HOST=https://yotpo.jfrog.io/yotpo/api/gems/gem-local
 curl -u$JFROG_USER:$JFROG_PASSWORD $RUBYGEMS_HOST/api/v1/api_key.yaml > ~/.gem/credentials

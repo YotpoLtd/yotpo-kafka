@@ -1,4 +1,3 @@
-require_relative '../config/initializers/red_cross_monitor'
 require_relative '../config/initializers/ylogger'
 require 'kafka'
 require 'yotpo_kafka/producer'
@@ -10,6 +9,7 @@ module YotpoKafka
   class << self; attr_accessor :fatal_topic; end
 end
 
-YotpoKafka.kafka = Kafka.new(ENV['BROKER_URL'])
+seed_brokers = ENV['BROKER_URL'] || '127.0.0.1:9092'
+YotpoKafka.kafka = Kafka.new(seed_brokers)
 YotpoKafka.retry_topic = 'retry_handler'
 YotpoKafka.fatal_topic = 'fatal'

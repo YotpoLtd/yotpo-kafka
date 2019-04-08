@@ -7,19 +7,18 @@ module YotpoKafka
 
     def initialize(params)
       @seconds_between_retries = params[:seconds_between_retries] || 0
-      @listen_to_failures = params[:listen_to_failures] || true
+      @listen_to_failures = true
+      @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
       @num_retries = params[:num_retries] || 0
-      @red_cross = params[:red_cross] || nil
       @logstash_logger = params[:logstash_logger] || false
       @topics = Array(params[:topics]) || nil
-      @group_id = params[:group_id]
+      @red_cross = params[:red_cross] || false
+      @group_id = params[:group_id] || 'missing_groupid'
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
       @producer = Producer.new(
-        red_cross: @red_cross,
         client_id: @group_id,
         logstash_logger: @logstash_logger
       )
-      config
     rescue StandardError => e
       log_error('Could not initialize',
                 exception: e.message,
@@ -28,30 +27,38 @@ module YotpoKafka
     end
 
     def start_consumer
-      YotpoKafka::YLoggerKafka.config(@logstash_logger || true)
-      @topics.each do |t|
-        @consumer.subscribe(t)
-        @consumer.subscribe(build_fail_topic(t))
-      end
+      subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
         begin
           consume_message(message.value)
           log_info('Message consumed', topic: message.topic, log_tag: 'yotpo-kafka')
-          RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @red_cross.nil?
+          RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @red_cross
         rescue StandardError => error
-          RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @red_cross.nil?
+          RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @red_cross
           handle_error(message, error)
         end
       end
     rescue StandardError => error
-      log_error('Consumer failed',
+      log_error('Consumer failed to start: ' + error.message,
                 exception: error.message,
                 log_tag: 'yotpo-ruby-kafka')
     end
 
+    def subscribe_to_topics
+      @topics.each do |t|
+        @consumer.subscribe(t)
+        log_info('Consume subscribes to topic: ' + t, log_tag: 'yotpo-kafka')
+        next unless @listen_to_failures
+
+        failure_topic = build_fail_topic(t)
+        @consumer.subscribe(failure_topic)
+        log_info('Consume subscribes to topic: ' + failure_topic, log_tag: 'yotpo-kafka')
+      end
+    end
+
     def build_fail_topic(main_topic)
-      main_topic.tr!('.', '_')
+      main_topic.tr('.', '_')
       group = @group_id.tr('.', '_')
       main_topic + '.' + group + '.failures'
     end
@@ -89,16 +96,6 @@ module YotpoKafka
         log_info('Message was not consumed - sent to fatal', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
         @producer.publish(YotpoKafka.fatal_topic, message.value, message.headers, message.key)
       end
-    end
-
-    def config
-      YotpoKafka::RedCrossKafka.config(@red_cross)
-      YotpoKafka::YLoggerKafka.config(@logstash_logger)
-    rescue StandardError => error
-      log_error('Could not config',
-                exception: error.message,
-                log_tag: 'yotpo-ruby-kafka')
-      raise 'Could not config'
     end
 
     def consume_message(_message)
