@@ -36,6 +36,7 @@ module YotpoKafka
           RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) unless @red_cross
         rescue StandardError => error
           RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) unless @red_cross
+          log_error('Consume error: ' + error.message, topic: message.topic, log_tag: 'yotpo-kafka')
           handle_error(message, error)
         end
       end
