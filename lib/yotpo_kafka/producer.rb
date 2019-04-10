@@ -21,7 +21,11 @@ module YotpoKafka
     end
 
     def publish(topic, value, headers = {}, key = nil)
-      @producer.produce(value, key: key, headers: headers, topic: topic)
+      if headers.empty?
+        @producer.produce(value.to_json, key: key, topic: topic)
+      else
+        @producer.produce(value, key: key, headers: headers, topic: topic)
+      end
       @producer.deliver_messages
     end
 
