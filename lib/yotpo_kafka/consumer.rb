@@ -5,7 +5,7 @@ module YotpoKafka
   class Consumer
     extend Ylogger
 
-    def initialize(params)
+    def initialize(params = {})
       @seconds_between_retries = params[:seconds_between_retries] || 0
       @listen_to_failures = true
       @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
@@ -32,9 +32,9 @@ module YotpoKafka
         @consumer.mark_message_as_processed(message)
         handle_consume(message)
       end
-    rescue StandardError => error
-      log_error('Consumer failed to start: ' + error.message,
-                exception: error.message,
+    rescue StandardError => e
+      log_error('Consumer failed to start: ' + e.message,
+                exception: e.message,
                 log_tag: 'yotpo-ruby-kafka')
     end
 
@@ -50,10 +50,10 @@ module YotpoKafka
       consume_message(message.value)
       log_info('Message consumed', topic: message.topic, log_tag: 'yotpo-kafka')
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
-    rescue StandardError => error
+    rescue StandardError => e
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
-      log_error('Consume error: ' + error.message, topic: message.topic, log_tag: 'yotpo-kafka')
-      handle_error_with_headers(message, error)
+      log_error('Consume error: ' + e.message, topic: message.topic, log_tag: 'yotpo-kafka')
+      handle_error_with_headers(message, e)
     end
 
     def handle_consume_without_headers(message)
