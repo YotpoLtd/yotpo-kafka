@@ -29,4 +29,8 @@ describe YotpoKafka do
     consumer = YotpoKafka::Consumer.new(topics: %w[blue yaniv magniv], group_id: 'my_group')
     expect { consumer.subscribe_to_topics }.to_not raise_error
   end
+
+  it 'getting to consume message' do
+    expect { Helpers::ConsumerHandler.new.consume_message('message') }.to_not raise_error
+  end
 end
