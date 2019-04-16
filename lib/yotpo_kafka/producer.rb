@@ -10,13 +10,11 @@ module YotpoKafka
 
     def initialize(params = {})
       @producer = YotpoKafka.kafka.producer
-      @client_id = params[:client_id] || 'missing_groupid'
       @red_cross = params[:red_cross] || false
-      @logstash_logger = params[:logstash_logger] || true
+      YotpoKafka::YLoggerKafka.config(true)
     rescue StandardError => e
       log_error('Producer failed to initialize',
-                exception: e.message,
-                log_tag: 'yotpo-kafka')
+                exception: e.message)
       raise 'Producer failed to initialize'
     end
 
@@ -28,20 +26,18 @@ module YotpoKafka
       end
       @producer.deliver_messages
     rescue StandardError => e
-      log_error('Single publish to topic ' + topic + ' failed with error: ' + e.message,
-                log_tag: 'yotpo-kafka')
+      log_error('Single publish to topic ' + topic + ' failed with error: ' + e.message)
     end
 
     def publish_multiple(topic, payloads, headers = {}, key = nil)
       payloads.each do |payload|
         publish(topic, payload, headers, key)
       end
-      log_info('Messages published successfully', log_tag: 'yotpo-kafka')
+      log_info('Messages published successfully')
       RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) if @red_cross
     rescue StandardError => e
       log_error('Publish multi messages failed',
-                exception: e.message,
-                log_tag: 'yotpo-kafka')
+                exception: e.message)
       RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) if @red_cross
     end
   end
