@@ -10,7 +10,6 @@ module YotpoKafka
       @listen_to_failures = true
       @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
       @num_retries = params[:num_retries] || 0
-      @logstash_logger = params[:logstash_logger] || false
       @topics = Array(params[:topics]) || nil
       @red_cross = params[:red_cross] || false
       @group_id = params[:group_id] || 'missing_groupid'
@@ -19,18 +18,19 @@ module YotpoKafka
         client_id: @group_id,
         logstash_logger: @logstash_logger
       )
+      YotpoKafka::YLoggerKafka.config(true)
     rescue StandardError => e
       log_error('Could not initialize',
                 exception: e.message,
                 broker_url: YotpoKafka.seed_brokers,
-                log_tag: 'yotpo-ruby-kafka')
+                log_tag: 'yotpo-kafka')
       raise 'Could not initialize'
     end
 
     def start_consumer
       log_info('Starting consume',
                 broker_url: YotpoKafka.seed_brokers,
-                log_tag: 'yotpo-ruby-kafka')
+                log_tag: 'yotpo-kafka')
       subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
@@ -40,7 +40,7 @@ module YotpoKafka
       log_error('Consumer failed to start: ' + e.message,
                 exception: e.message,
                 broker_url: YotpoKafka.seed_brokers,
-                log_tag: 'yotpo-ruby-kafka')
+                log_tag: 'yotpo-kafka')
     end
 
     def handle_consume(message)
@@ -120,7 +120,7 @@ module YotpoKafka
       }
       if (retry_hdr[:CurrentAttempt]).positive?
         payload[YotpoKafka.retry_header_key] = retry_hdr.to_json.to_s
-        log_info('Message was not consumed - wait for retry', topic: topic, log_tag: 'yotpo-ruby-kafka')
+        log_info('Message was not consumed - wait for retry', topic: topic, log_tag: 'yotpo-kafka')
         if @seconds_between_retries.zero?
           @producer.publish(parsed_hdr['FailuresTopic'], payload, {}, key)
         else
@@ -129,7 +129,7 @@ module YotpoKafka
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         payload[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        log_info('Message was not consumed - sent to fatal', topic: topic, log_tag: 'yotpo-ruby-kafka')
+        log_info('Message was not consumed - sent to fatal', topic: topic, log_tag: 'yotpo-kafka')
         @producer.publish(YotpoKafka.fatal_topic, payload, {}, key)
       end
     end
@@ -155,7 +155,7 @@ module YotpoKafka
       }
       if (retry_hdr[:CurrentAttempt]).positive?
         message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        log_info('Message was not consumed - wait for retry', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
+        log_info('Message was not consumed - wait for retry', topic: message.topic, log_tag: 'yotpo-kafka')
         if @seconds_between_retries.zero?
           @producer.publish(parsed_hdr['FailuresTopic'], message.value, message.headers, message.key)
         else
@@ -164,7 +164,7 @@ module YotpoKafka
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        log_info('Message was not consumed - sent to fatal', topic: message.topic, log_tag: 'yotpo-ruby-kafka')
+        log_info('Message was not consumed - sent to fatal', topic: message.topic, log_tag: 'yotpo-kafka')
         @producer.publish(YotpoKafka.fatal_topic, message.value, message.headers, message.key)
       end
     end
