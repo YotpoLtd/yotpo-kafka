@@ -6,6 +6,7 @@ describe YotpoKafka do
     @topic = 'test_topic'
     @message = { test_message: 'testing kafka' }
     @messages = %w[a b c]
+    YotpoKafka.kafka = Kafka.new('127.0.0.1:9092')
   end
 
   it 'config a producer without parameters works' do

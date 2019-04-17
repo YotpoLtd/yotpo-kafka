@@ -20,7 +20,7 @@ module YotpoKafka
         logstash_logger: @logstash_logger
       )
       set_log_tag(:yotpo_ruby_kafka)
-      log_info("Using yotpo-ruby-kafka 1.0.7")
+      log_info("Using yotpo-ruby-kafka 1.0.8")
       YotpoKafka::YLoggerKafka.config(true)
     rescue StandardError => e
       log_error('Could not initialize',
@@ -88,6 +88,12 @@ module YotpoKafka
         next unless @listen_to_failures
 
         failure_topic = build_fail_topic(t)
+        begin
+          YotpoKafka.kafka.create_topic(failure_topic)
+          log_info('YotpoKafka created new topic: ' + failure_topic)
+        rescue Kafka::TopicAlreadyExists
+        end
+
         @consumer.subscribe(failure_topic)
         log_info('Consume subscribes to topic: ' + failure_topic)
       end
