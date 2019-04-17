@@ -12,8 +12,8 @@ module YotpoKafka
   class << self; attr_accessor :retry_header_key; end
 end
 
-YotpoKafka.seed_brokers = ENV['BROKER_URL'] || '127.0.0.1:9092'
-YotpoKafka.kafka = Kafka.new(YotpoKafka.seed_brokers)
+YotpoKafka.seed_brokers = ENV['BROKER_URL'] || 'Joker-kafka.service.consul:9092'
+YotpoKafka.kafka = Kafka.new(YotpoKafka.seed_brokers) unless YotpoKafka.kafka
 YotpoKafka.retry_header_key = 'retry'
 YotpoKafka.retry_topic = 'retry_handler'
 YotpoKafka.fatal_topic = 'fatal'

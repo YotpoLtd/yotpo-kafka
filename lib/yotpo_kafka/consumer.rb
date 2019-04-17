@@ -14,12 +14,13 @@ module YotpoKafka
       @red_cross = params[:red_cross] || false
       @group_id = params[:group_id] || 'missing_groupid'
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
+      trap("TERM") { @consumer.stop }
       @producer = Producer.new(
         client_id: @group_id,
         logstash_logger: @logstash_logger
       )
       set_log_tag(:yotpo_ruby_kafka)
-      log_info("Using yotpo-ruby-kafka 1.0.6")
+      log_info("Using yotpo-ruby-kafka 1.0.7")
       YotpoKafka::YLoggerKafka.config(true)
     rescue StandardError => e
       log_error('Could not initialize',

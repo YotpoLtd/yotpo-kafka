@@ -11,6 +11,7 @@ module YotpoKafka
     def initialize(params = {})
       @producer = YotpoKafka.kafka.producer
       @red_cross = params[:red_cross] || false
+      set_log_tag(:yotpo_ruby_kafka)
       YotpoKafka::YLoggerKafka.config(true)
     rescue StandardError => e
       log_error('Producer failed to initialize',
