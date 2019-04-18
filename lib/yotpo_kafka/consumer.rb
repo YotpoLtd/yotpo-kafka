@@ -6,6 +6,8 @@ module YotpoKafka
     extend Ylogger
 
     def initialize(params = {})
+      YotpoKafka::YLoggerKafka.config(true)
+      set_log_tag(:yotpo_ruby_kafka)
       @seconds_between_retries = params[:seconds_between_retries] || 0
       @listen_to_failures = true
       @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
@@ -17,13 +19,11 @@ module YotpoKafka
       trap("TERM") { @consumer.stop }
       @producer = Producer.new(
         client_id: @group_id,
-        logstash_logger: @logstash_logger
+        logstash_logger: true
       )
-      set_log_tag(:yotpo_ruby_kafka)
-      log_info("Consumer yotpo-ruby-kafka 1.0.9 broker address " + YotpoKafka.seed_brokers)
-      YotpoKafka::YLoggerKafka.config(true)
+      log_info("Consumer yotpo-ruby-kafka 1.0.11 broker address " + YotpoKafka.seed_brokers)
     rescue StandardError => e
-      log_error('Could not initialize',
+      log_error('Consumer Could not initialize',
                 exception: e.message,
                 broker_url: YotpoKafka.seed_brokers)
       raise 'Could not initialize'

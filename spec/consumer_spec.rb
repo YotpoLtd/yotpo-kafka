@@ -3,7 +3,7 @@ require 'spec_helper'
 describe YotpoKafka do
   before(:each) do
     allow_any_instance_of(Kafka).to receive(:create_topic)
-    YotpoKafka.kafka = Kafka.new('127.0.0.1:9092')
+    YotpoKafka.seed_brokers = '127.0.0.1:9092'
   end
 
   it 'config empty consumer without handler expects runtime error' do

@@ -9,11 +9,13 @@ module YotpoKafka
     extend Ylogger
 
     def initialize(params = {})
+      YotpoKafka::YLoggerKafka.config(true)
+      set_log_tag(:yotpo_ruby_kafka)
+      log_info("Creating new producer")
+      YotpoKafka.kafka = Kafka.new(YotpoKafka.seed_brokers)
       @producer = YotpoKafka.kafka.producer
       @red_cross = params[:red_cross] || false
-      set_log_tag(:yotpo_ruby_kafka)
-      YotpoKafka::YLoggerKafka.config(true)
-      log_info("Producer yotpo-ruby-kafka 1.0.9 broker address " + YotpoKafka.seed_brokers)
+      log_info("Producer yotpo-ruby-kafka 1.0.11 broker address " + YotpoKafka.seed_brokers)
     rescue StandardError => e
       log_error('Producer failed to initialize',
                 exception: e.message,
