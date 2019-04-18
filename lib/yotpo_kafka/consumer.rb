@@ -20,7 +20,7 @@ module YotpoKafka
         logstash_logger: @logstash_logger
       )
       set_log_tag(:yotpo_ruby_kafka)
-      log_info("Using yotpo-ruby-kafka 1.0.8")
+      log_info("Consumer yotpo-ruby-kafka 1.0.9 broker address " + YotpoKafka.seed_brokers)
       YotpoKafka::YLoggerKafka.config(true)
     rescue StandardError => e
       log_error('Could not initialize',
@@ -52,9 +52,11 @@ module YotpoKafka
     end
 
     def consume_with_headers(message)
-      log_info('Handle consume', payload: message.value, topic: message.topic)
+      log_info('Handle consume',
+               payload: message.value, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(message.value)
-      log_info('Message consumed', topic: message.topic)
+      log_info('Message consumed',
+               topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue StandardError => e
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
@@ -63,7 +65,8 @@ module YotpoKafka
     end
 
     def handle_consume_without_headers(message)
-      log_info('Handle consume', payload: message.value, topic: message.topic)
+      log_info('Handle consume',
+               payload: message.value, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       parsed_payload = JSON.parse(message.value)
       unless parsed_payload.is_a?(Hash)
         raise JSON::ParserError.new('Parse didnt finish correctly')
