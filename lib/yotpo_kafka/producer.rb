@@ -11,21 +11,19 @@ module YotpoKafka
     def initialize(params = {})
       YotpoKafka::YLoggerKafka.config(true)
       set_log_tag(:yotpo_ruby_kafka)
-      log_info("Creating new producer")
       YotpoKafka.kafka = Kafka.new(YotpoKafka.seed_brokers)
       @producer = YotpoKafka.kafka.producer
       @red_cross = params[:red_cross] || false
-      log_info("Producer yotpo-ruby-kafka 1.0.11 broker address " + YotpoKafka.seed_brokers)
     rescue StandardError => e
-      log_error('Producer failed to initialize',
+      log_error('YotpoKafka producer failed to initialize',
                 exception: e.message,
                 broker_url: YotpoKafka.seed_brokers)
       raise 'Producer failed to initialize'
     end
 
     def publish(topic, value, headers = {}, key = nil)
-      log_info('Publishing message to topic ' + topic,
-               message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
+      log_info('YotpoKafka publishing message',
+               topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
       if headers.empty?
         @producer.produce(value.to_json, key: key, topic: topic)
       else
@@ -33,17 +31,18 @@ module YotpoKafka
       end
       @producer.deliver_messages
     rescue StandardError => e
-      log_error('Single publish to topic ' + topic + ' failed with error: ' + e.message,
-                broker_url: YotpoKafka.seed_brokers)
+      log_error('YotpoKafka single publish failed',
+                broker_url: YotpoKafka.seed_brokers,
+                topic: topic,
+                error: e.message)
     end
 
     def publish_multiple(topic, payloads, headers = {}, key = nil)
-      log_info('Publish multiply messages to topic ' + topic,
-               message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
+      log_info('YotpoKafka publishing multiply messages',
+               topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, headers, key)
       end
-      log_info('Messages published successfully')
       RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) if @red_cross
     rescue StandardError => e
       log_error('Publish multi messages failed',
