@@ -14,15 +14,15 @@ module YotpoKafka
       YotpoKafka.kafka = Kafka.new(YotpoKafka.seed_brokers)
       @producer = YotpoKafka.kafka.producer
       @red_cross = params[:red_cross] || false
-    rescue StandardError => e
-      log_error('YotpoKafka producer failed to initialize',
-                exception: e.message,
+    rescue => error
+      log_error('Producer failed to initialize',
+                exception: error.message,
                 broker_url: YotpoKafka.seed_brokers)
       raise 'Producer failed to initialize'
     end
 
     def publish(topic, value, headers = {}, key = nil)
-      log_info('YotpoKafka publishing message',
+      log_info('Publishing message',
                topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
       if headers.empty?
         @producer.produce(value.to_json, key: key, topic: topic)
@@ -30,23 +30,25 @@ module YotpoKafka
         @producer.produce(value, key: key, headers: headers, topic: topic)
       end
       @producer.deliver_messages
-    rescue StandardError => e
-      log_error('YotpoKafka single publish failed',
+    rescue => error
+      log_error('Single publish failed',
                 broker_url: YotpoKafka.seed_brokers,
+                message: value,
+                headers: headers,
                 topic: topic,
-                error: e.message)
+                error: error.message)
     end
 
     def publish_multiple(topic, payloads, headers = {}, key = nil)
-      log_info('YotpoKafka publishing multiply messages',
+      log_info('Publishing multiple messages',
                topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, headers, key)
       end
       RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) if @red_cross
-    rescue StandardError => e
+    rescue => error
       log_error('Publish multi messages failed',
-                exception: e.message)
+                exception: error.message)
       RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) if @red_cross
     end
   end

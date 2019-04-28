@@ -69,6 +69,12 @@ Style/Documentation:
 Style/SignalException:
   Enabled: false
 
+Style/RescueStandardError:
+  Enabled: false
+
+Naming/RescuedExceptionsVariableName:
+  Enabled: false
+
 Layout/EmptyLinesAroundModuleBody:
   Enabled: false
 

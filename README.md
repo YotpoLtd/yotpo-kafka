@@ -13,8 +13,7 @@ Define BROKER_URL environment variable (default 127.0.0.1)
 ### Creating a producer:
 
 ```ruby
-producer = Producer.new({ red_cross: @red_cross, client_id: @group_id, logstash_logger: @logstash_logger })
-producer.publish(value, topic, headers, key)
+YotpoKafka::Producer.new.publish(EVENTBUS['REVIEW_IMAGE_CREATE_TOPIC'], message, headers, key)
 ```
 
 * **_value:_** string to publish
@@ -40,16 +39,12 @@ A consumer will be defined in a rake task as follows:
 ```ruby
   desc 'New Consumer'
   task :new_consumer do
-    begin
-      consumer = Consumers::DummyConsumer.new({
-                                                seconds_between_retries: 10,
-                                                num_retries: 3,
-                                                topics: 'rubytest',
-                                                group_id: 'consumer_test_topics',
-                                                handler: Consumers::DummyConsumer
-                                              })
-      consumer.start_consumer
-    end
+      Consumers::DummyConsumer.new({
+                                    seconds_between_retries: 10,
+                                    num_retries: 3,
+                                    topics: 'rubytest',
+                                    group_id: 'consumer_test_topics',
+                                   }).start_consumer
   end
 ```
 * _**topics:**_ name of the topic to publish to (or an array of topics)
