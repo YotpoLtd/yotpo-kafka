@@ -92,7 +92,9 @@ module YotpoKafka
 
         failure_topic = get_fail_topic_name(t)
         begin
-          YotpoKafka.kafka.create_topic(failure_topic)
+          YotpoKafka.kafka.create_topic(failure_topic,
+                                        num_partitions: YotpoKafka.default_partitions_num,
+                                        replication_factor: YotpoKafka.default_replication_factor)
           log_info('Created new topic: ' + failure_topic)
         rescue Kafka::TopicAlreadyExists
           nil

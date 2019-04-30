@@ -1,4 +1,4 @@
-# Kafka Gem
+# Yotpo Kafka Gem in Ruby
 
 ## Installation
 
@@ -13,7 +13,11 @@ Define BROKER_URL environment variable (default 127.0.0.1)
 ### Creating a producer:
 
 ```ruby
+require 'yotpo_kafka'
+...
 YotpoKafka::Producer.new.publish(EVENTBUS['REVIEW_IMAGE_CREATE_TOPIC'], message, headers, key)
+...
+
 ```
 
 * **_value:_** string to publish
@@ -37,6 +41,8 @@ YotpoKafka::Producer.new.publish(EVENTBUS['REVIEW_IMAGE_CREATE_TOPIC'], message,
 A consumer will be defined in a rake task as follows:
 
 ```ruby
+require 'yotpo_kafka'
+
   desc 'New Consumer'
   task :new_consumer do
       Consumers::DummyConsumer.new({
@@ -75,32 +81,26 @@ end
 Check [kafka-retry-service](https://github.com/YotpoLtd/kafka-retry-service) for more details 
   
 #### How to install Kafka locally for debugging needs:
+##### Local installation
+* brew cask install java8
+* brew install kafka
+* vim /usr/local/etc/kafka/server.properties
 ```
-1. brew cask install java8
-2. brew install kafka
-
-3. vim /usr/local/etc/kafka/server.properties
 Here uncomment the server settings and update the value from:
 
 listeners=PLAINTEXT://:9092
 to
 listeners = PLAINTEXT://your.host.name:9092
 and restart the server and it will work great.
-
-4. zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties
-kafka-server-start /usr/local/etc/kafka/server.properties
-
-5. Create Kafka Topic:
-kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
-
-6. Initialize Producer console:
-kafka-console-producer --broker-list localhost:9092 --topic test
-
-7. Initialize Consumer console:
-kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
 ```
+Some commands to start:
+* zookeeper-server-start /usr/local/etc/kafka/zookeeper.properties
+* kafka-server-start /usr/local/etc/kafka/server.properties
+* kafka-topics --create --zookeeper localhost:2181 --replication-factor 1 --partitions 1 --topic test
+* kafka-console-producer --broker-list localhost:9092 --topic test
+* kafka-console-consumer --bootstrap-server localhost:9092 --topic test --from-beginning
 
-#### Using dockers
+##### Using dockers
 ```
 docker-compose -f docker-compose/docker-compose.yml up -d
 ```

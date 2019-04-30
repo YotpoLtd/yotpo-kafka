@@ -4,6 +4,8 @@ describe YotpoKafka do
   before(:each) do
     allow_any_instance_of(Kafka).to receive(:create_topic)
     YotpoKafka.seed_brokers = '127.0.0.1:9092'
+    YotpoKafka.default_replication_factor = 1
+    YotpoKafka.default_partitions_num = 1
   end
 
   it 'config empty consumer without handler expects runtime error' do

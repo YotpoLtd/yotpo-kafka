@@ -14,7 +14,7 @@ export RUBYGEMS_HOST=https://yotpo.jfrog.io/yotpo/api/gems/gem-local
 curl -u$JFROG_USER:$JFROG_PASSWORD $RUBYGEMS_HOST/api/v1/api_key.yaml > ~/.gem/credentials
 chmod 0600 ~/.gem/credentials
 
-if [[ $TRAVIS_BRANCH == "yotpo-ruby-kafka" ]]; then
+if [[ $TRAVIS_BRANCH == "master" ]]; then
   GEM_FILE=$(find ./pkg -name *.gem)
     if [ -z "$GEM_FILE" ]; then
         echo "Didn't find any suitable gem to release."
