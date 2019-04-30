@@ -33,6 +33,7 @@ module YotpoKafka
       subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
+        @consumer.commit_offsets
         handle_consume(message)
       end
     rescue => error
@@ -51,7 +52,7 @@ module YotpoKafka
 
     def consume_with_headers(message)
       log_info('Start handling consume with headers',
-               payload: message.value, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+               payload: message.value, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(message.value)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue => error
