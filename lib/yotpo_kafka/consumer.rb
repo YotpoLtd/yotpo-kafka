@@ -51,7 +51,7 @@ module YotpoKafka
     end
 
     def consume_with_headers(message)
-      log_info('Start handling consume with headers',
+      log_info('Start handling consume',
                payload: message.value, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(message.value)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
@@ -63,7 +63,7 @@ module YotpoKafka
     end
 
     def consume_without_headers(message)
-      log_info('Start handling consume without headers',
+      log_info('Start handling consume',
                payload: message.value, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       parsed_payload = JSON.parse(message.value)
       unless parsed_payload.is_a?(Hash)

@@ -20,5 +20,5 @@ YotpoKafka.retry_header_key = 'retry'
 YotpoKafka.retry_topic = 'retry_handler'
 YotpoKafka.fatal_topic = 'fatal'
 YotpoKafka.include_headers = Kafka::FetchedMessage.instance_methods.include?(:headers)
-YotpoKafka.default_partitions_num = ENV['DEFAULT_PARTITIONS_NUM'] || 35
-YotpoKafka.default_replication_factor = ENV['DEFAULT_REPLICATION_FACTOR'] || 3
+YotpoKafka.default_partitions_num = ENV['DEFAULT_PARTITIONS_NUM'].to_i || 1
+YotpoKafka.default_replication_factor = ENV['DEFAULT_REPLICATION_FACTOR'].to_i || 1
