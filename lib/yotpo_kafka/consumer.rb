@@ -43,7 +43,7 @@ module YotpoKafka
     end
 
     def handle_consume(message)
-      if YotpoKafka.include_headers
+      if YotpoKafka.kafka_v2
         consume_with_headers(message)
       else
         consume_without_headers(message)
@@ -75,10 +75,11 @@ module YotpoKafka
       log_info('Message consumed and handled', topic: message.topic)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue JSON::ParserError => parse_error
-      log_error('Consume parse error - no retry: ' + parse_error.to_s,
+      log_info('Consume json parse error - proceeding without conversion: ' + parse_error.to_s,
                 topic: message.topic,
                 payload: message.value)
-      RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
+      consume_message(message.value)
+      RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue => error
       log_error('Consume error: ' + error.message, topic: message.topic, backtrace: error.backtrace)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross

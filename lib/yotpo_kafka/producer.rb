@@ -21,29 +21,30 @@ module YotpoKafka
       raise 'Producer failed to initialize'
     end
 
-    def publish(topic, value, headers = {}, key = nil)
+    def publish(topic, value, kafka_v2_headers = {}, key = nil, to_json = true)
       log_info('Publishing message',
-               topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
-      if headers.empty?
-        @producer.produce(value.to_json, key: key, topic: topic)
+               topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
+      value = value.to_json if to_json
+      if YotpoKafka.kafka_v2
+        @producer.produce(value, key: key, headers: kafka_v2_headers, topic: topic)
       else
-        @producer.produce(value, key: key, headers: headers, topic: topic)
+        @producer.produce(value, key: key, topic: topic)
       end
       @producer.deliver_messages
     rescue => error
       log_error('Single publish failed',
                 broker_url: YotpoKafka.seed_brokers,
                 message: value,
-                headers: headers,
+                headers: kafka_v2_headers,
                 topic: topic,
                 error: error.message)
     end
 
-    def publish_multiple(topic, payloads, headers = {}, key = nil)
+    def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)
       log_info('Publishing multiple messages',
-               topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
+               topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payloads.each do |payload|
-        publish(topic, payload, headers, key)
+        publish(topic, payload, kafka_v2_headers, key, to_json)
       end
       RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) if @red_cross
     rescue => error
