@@ -31,4 +31,23 @@ describe YotpoKafka do
     key = 'key'
     expect { producer.publish_multiple(@topic, @messages, headers, key) }.not_to raise_error
   end
+
+  it 'publish with retry check' do
+    producer = YotpoKafka::Producer.new({})
+    headers = { hdr: 'headers' }
+    key = 'key'
+    YotpoKafka.kafka = Kafka.new('127.0.0.1:9999')
+    allow(YotpoKafka::Producer).to receive(:publish).with(any_args).exactly(3).times
+    allow(RestClient).to receive(:post).with(any_args).exactly(1).times
+    expect { producer.async_publish_with_retry(@topic, @messages, headers, key) }.not_to raise_error
+  end
+
+  it 'when publish with retry success it doesnt send rest request' do
+    producer = YotpoKafka::Producer.new({})
+    headers = { hdr: 'headers' }
+    key = 'key'
+    allow(YotpoKafka::Producer).to receive(:publish).with(any_args).exactly(1).times
+    allow(RestClient).to receive(:post).with(any_args).exactly(0).times
+    expect { producer.async_publish_with_retry(@topic, @messages, headers, key) }.not_to raise_error
+  end
 end

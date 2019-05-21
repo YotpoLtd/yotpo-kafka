@@ -5,6 +5,7 @@ require 'yotpo_kafka/consumer'
 
 module YotpoKafka
   class << self; attr_accessor :seed_brokers; end
+  class << self; attr_accessor :kafka_retry_service_url; end
   class << self; attr_accessor :kafka; end
   class << self; attr_accessor :retry_topic; end
   class << self; attr_accessor :fatal_topic; end
@@ -15,6 +16,7 @@ module YotpoKafka
 end
 
 YotpoKafka.seed_brokers = ENV['BROKER_URL'] || '127.0.0.1:9092'
+YotpoKafka.kafka_retry_service_url = ENV['KAFKA_RETRY_SERVICE_URL'] || '127.0.0.1:8080'
 YotpoKafka.kafka = Kafka.new(YotpoKafka.seed_brokers) unless YotpoKafka.kafka
 YotpoKafka.retry_header_key = 'retry'
 YotpoKafka.retry_topic = 'retry_handler'

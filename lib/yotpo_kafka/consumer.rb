@@ -76,8 +76,8 @@ module YotpoKafka
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue JSON::ParserError => parse_error
       log_info('Consume json parse error - proceeding without conversion: ' + parse_error.to_s,
-                topic: message.topic,
-                payload: message.value)
+               topic: message.topic,
+               payload: message.value)
       consume_message(message.value)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue => error
