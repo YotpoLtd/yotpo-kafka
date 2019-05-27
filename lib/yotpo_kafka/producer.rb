@@ -43,17 +43,21 @@ module YotpoKafka
 
     def async_publish_with_retry(topic, value, headers = {}, key = nil,
                                  immediate_retry_count = 3, interval_between_retry = 2)
+      backtrace_keeper = caller
+      backtrace_keeper = backtrace_keeper[0..5] if backtrace_keeper.length > 6
+      is_published = false
+      last_error = ''
       thread = Thread.new {
-        last_error = ''
-        is_published = false
         (1..immediate_retry_count).each do |try_num|
           begin
-            log_info('Publish retry, Attempt: ' + try_num.to_s,
-                     topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers)
             publish(topic, value, headers, key)
             is_published = true
             break
           rescue => error
+            log_error('Async publish failed, attempt: ' + try_num.to_s,
+                      topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers,
+                      error: error.message,
+                      backtrace: backtrace_keeper)
             sleep(interval_between_retry)
             last_error = error.message
           end
