@@ -1,3 +1,4 @@
+require 'avro_turf/messaging'
 require 'kafka'
 require 'ylogger'
 
@@ -15,17 +16,25 @@ module YotpoKafka
       @topics = Array(params[:topics]) || nil
       @red_cross = params[:red_cross] || false
       @group_id = params[:group_id] || 'missing_groupid'
+      @avro_encoding = params[:avro_encoding] || false
+      @avro = nil
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
       trap('TERM') { @consumer.stop }
       @producer = Producer.new(
         client_id: @group_id,
-        logstash_logger: true
+        avro_encoding: @avro_encoding
       )
     rescue => error
       log_error('Consumer Could not initialize',
-                exception: error.message,
-                broker_url: YotpoKafka.seed_brokers)
+                error: error.message,
+                broker_url: YotpoKafka.seed_brokers,
+                backtrace: error.backtrace)
       raise 'Could not initialize'
+    end
+
+    def set_avro_registry(registry_url)
+      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
+      @producer.set_avro_registry(registry_url)
     end
 
     def start_consumer
@@ -34,23 +43,39 @@ module YotpoKafka
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
         @consumer.commit_offsets
+        if @avro_encoding
+          raise 'avro schema is not set' unless @avro
+
+          schema = message.topic
+          if schema.include? YotpoKafka.failures_topic_suffix
+            if YotpoKafka.kafka_v2
+              message.headers[YotpoKafka.retry_header_key]['MainTopic']
+            else
+              JSON.parse(message.value)['MainTopic']
+            end
+          end
+          message.value = @avro.decode(message.value, schema_name: schema)
+        end
         handle_consume(message)
       end
     rescue => error
       log_error('Consumer failed to start: ' + error.message,
-                exception: error.message,
+                error: error.message,
+                backtrace: error.backtrace,
+                topics: @topics,
+                group: @group_id,
                 broker_url: YotpoKafka.seed_brokers)
     end
 
     def handle_consume(message)
       if YotpoKafka.kafka_v2
-        consume_with_headers(message)
+        consume_kafka_v2(message)
       else
-        consume_without_headers(message)
+        consume_kafka_v1(message)
       end
     end
 
-    def consume_with_headers(message)
+    def consume_kafka_v2(message)
       log_info('Start handling consume',
                payload: message.value, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(message.value)
@@ -59,10 +84,10 @@ module YotpoKafka
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
       log_error('Consume error: ' + error.message,
                 topic: message.topic, payload: message.value, backtrace: error.backtrace)
-      handle_error_with_headers(message, error)
+      handle_error_kafka_v2(message, error)
     end
 
-    def consume_without_headers(message)
+    def consume_kafka_v1(message)
       log_info('Start handling consume',
                payload: message.value, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       parsed_payload = JSON.parse(message.value)
@@ -78,12 +103,11 @@ module YotpoKafka
       log_info('Consume json parse error - proceeding without conversion: ' + parse_error.to_s,
                topic: message.topic,
                payload: message.value)
-      consume_message(message.value)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue => error
       log_error('Consume error: ' + error.message, topic: message.topic, backtrace: error.backtrace)
       RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
-      handle_error_without_headers(parsed_payload, message.topic, message.key, error)
+      handle_error_kafka_v1(parsed_payload, message.topic, message.key, error)
     end
 
     def subscribe_to_topics
@@ -112,83 +136,77 @@ module YotpoKafka
     def get_fail_topic_name(main_topic)
       main_topic.tr('.', '_')
       group = @group_id.tr('.', '_')
-      main_topic + '.' + group + '.failures'
+      main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
-    def handle_error_without_headers(payload, topic, key, error)
-      if payload[YotpoKafka.retry_header_key].nil?
-        payload[YotpoKafka.retry_header_key] = {
-          CurrentAttempt: @num_retries,
-          NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
-          Error: error.to_s,
-          MainTopic: topic,
-          FailuresTopic: get_fail_topic_name(topic)
-        }.to_json
-      end
-      parsed_hdr = JSON.parse(payload[YotpoKafka.retry_header_key])
-      retry_hdr = {
+    def get_init_retry_header(topic, error)
+      {
+        CurrentAttempt: @num_retries,
+        NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
+        Error: error.message,
+        MainTopic: topic,
+        FailuresTopic: get_fail_topic_name(topic)
+      }.to_json
+    end
+
+    def update_retry_header(retry_hdr, error)
+      parsed_hdr = JSON.parse(retry_hdr)
+      {
         CurrentAttempt: parsed_hdr['CurrentAttempt'] - 1,
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
-        Error: error.to_s,
+        Error: error.message,
         MainTopic: parsed_hdr['MainTopic'],
         FailuresTopic: parsed_hdr['FailuresTopic']
       }
+    end
+
+    def publish_to_retry_service(retry_hdr, message, kafka_v2, key)
       if (retry_hdr[:CurrentAttempt]).positive?
-        payload[YotpoKafka.retry_header_key] = retry_hdr.to_json.to_s
+        set_headers(message, retry_hdr, kafka_v2)
         log_info('Message failed to consumed, send to RETRY',
-                 topic: topic,
                  retry_hdr: retry_hdr.to_s)
         if @seconds_between_retries.zero?
-          @producer.publish(parsed_hdr['FailuresTopic'], payload, {}, key)
+          publish_based_on_version(parsed_hdr['FailuresTopic'], message, kafka_v2, key)
         else
-          @producer.publish(YotpoKafka.retry_topic, payload, {}, key)
+          publish_based_on_version(YotpoKafka.retry_topic, message, kafka_v2, key)
         end
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
-        payload[YotpoKafka.retry_header_key] = retry_hdr.to_json
+        set_headers(message, retry_hdr, kafka_v2)
         log_info('Message failed to consumed, sent to FATAL',
-                 topic: topic,
                  retry_hdr: retry_hdr.to_s)
-        @producer.publish(YotpoKafka.fatal_topic, payload, {}, key)
+        publish_based_on_version(YotpoKafka.fatal_topic, message, kafka_v2, key)
       end
     end
 
-    def handle_error_with_headers(message, error)
-      unless message.headers[YotpoKafka.retry_header_key]
-        message.headers[YotpoKafka.retry_header_key] = {
-          CurrentAttempt: @num_retries,
-          NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
-          Error: error.to_s,
-          MainTopic: message.topic,
-          FailuresTopic: get_fail_topic_name(message.topic)
-        }.to_json
-      end
-      parsed_hdr = JSON.parse(message.headers[YotpoKafka.retry_header_key])
-      retry_hdr = {
-        CurrentAttempt: parsed_hdr['CurrentAttempt'] - 1,
-        NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
-        Error: error.to_s,
-        MainTopic: parsed_hdr['MainTopic'],
-        FailuresTopic: parsed_hdr['FailuresTopic']
-      }
-      if (retry_hdr[:CurrentAttempt]).positive?
+    def set_headers(message, retry_hdr, kafka_v2)
+      if kafka_v2
         message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        log_info('Message failed to consumed, wait for RETRY',
-                 topic: message.topic,
-                 retry_hdr: retry_hdr.to_s)
-        if @seconds_between_retries.zero?
-          @producer.publish(parsed_hdr['FailuresTopic'], message.value, message.headers, message.key)
-        else
-          @producer.publish(YotpoKafka.retry_topic, message.value, message.headers, message.key)
-        end
       else
-        retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
-        message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        log_info('Message failed to consumed, sent to FATAL',
-                 topic: message.topic,
-                 retry_hdr: retry_hdr.to_s)
-        @producer.publish(YotpoKafka.fatal_topic, message.value, message.headers, message.key)
+        message[YotpoKafka.retry_header_key] = retry_hdr.to_json.to_s
       end
+    end
+
+    def publish_based_on_version(topic, message, kafka_v2, key = nil)
+      if kafka_v2
+        @producer.publish(topic, message.value, message.headers, message.key)
+      else
+        @producer.publish(topic, message, {}, key)
+      end
+    end
+
+    def handle_error_kafka_v1(payload, topic, key, error)
+      payload[YotpoKafka.retry_header_key] = get_init_retry_header(topic, error) if payload[YotpoKafka.retry_header_key].nil?
+      retry_hdr = update_retry_header(payload[YotpoKafka.retry_header_key], error)
+      publish_to_retry_service(retry_hdr, payload, false, key)
+    end
+
+    def handle_error_kafka_v2(message, error)
+      unless message.headers[YotpoKafka.retry_header_key]
+        message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, error)
+      end
+      retry_hdr = update_retry_header(message.headers[YotpoKafka.retry_header_key], error)
+      publish_to_retry_service(retry_hdr, message, true, message.key)
     end
 
     def consume_message(_message)
