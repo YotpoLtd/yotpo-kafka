@@ -13,6 +13,8 @@ module YotpoKafka
       YotpoKafka::YLoggerKafka.config(true)
       set_log_tag(:yotpo_ruby_kafka)
       @producer = YotpoKafka.kafka.producer
+      @avro_encoding = params[:avro_encoding].to_bool || false
+      @avro = nil
       @red_cross = params[:red_cross] || false
     rescue => error
       log_error('Producer failed to initialize',
@@ -21,20 +23,30 @@ module YotpoKafka
       raise 'Producer failed to initialize'
     end
 
-    def publish(topic, value, kafka_v2_headers = {}, key = nil, to_json = true)
+    def set_avro_schema(registry_url)
+      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
+    end
+
+    def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
       log_info('Publishing message',
-               topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
-      value = value.to_json if to_json
+               topic: topic, message: payload, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
+      payload = payload.to_json if to_json
+      if @avro_encoding
+        raise 'avro schema is not set' unless @avro
+        schema = topic
+        schema = schema.split('.')[0] if schema.includes? failures_topic_suffix
+        payload = avro.decode(payload, schema_name: schema)
+      end
       if YotpoKafka.kafka_v2
-        @producer.produce(value, key: key, headers: kafka_v2_headers, topic: topic)
+        @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
       else
-        @producer.produce(value, key: key, topic: topic)
+        @producer.produce(payload, key: key, topic: topic)
       end
       @producer.deliver_messages
     rescue => error
       log_error('Single publish failed',
                 broker_url: YotpoKafka.seed_brokers,
-                message: value,
+                message: payload,
                 headers: kafka_v2_headers,
                 topic: topic,
                 error: error.message)

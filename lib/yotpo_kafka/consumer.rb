@@ -1,5 +1,6 @@
 require 'kafka'
 require 'ylogger'
+require 'avro_turf'
 
 module YotpoKafka
   class Consumer
@@ -15,11 +16,13 @@ module YotpoKafka
       @topics = Array(params[:topics]) || nil
       @red_cross = params[:red_cross] || false
       @group_id = params[:group_id] || 'missing_groupid'
+      @avro_encoding = params[:avro_encoding].to_bool || false
+      @avro = nil
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
       trap('TERM') { @consumer.stop }
       @producer = Producer.new(
         client_id: @group_id,
-        logstash_logger: true
+        avro_encoding: @avro_encoding
       )
     rescue => error
       log_error('Consumer Could not initialize',
@@ -29,12 +32,22 @@ module YotpoKafka
       raise 'Could not initialize'
     end
 
+    def set_avro_schema(registry_url)
+      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
+    end
+
     def start_consumer
       log_info('Starting consume', broker_url: YotpoKafka.seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
         @consumer.commit_offsets
+        if @avro_encoding
+          raise 'avro schema is not set' unless @avro
+          schema = message.topic
+          schema = schema.split('.')[0] if schema.includes? failures_topic_suffix
+          message.value = avro.decode(message.value, schema_name: schema)
+        end
         handle_consume(message)
       end
     rescue => error
@@ -46,13 +59,13 @@ module YotpoKafka
 
     def handle_consume(message)
       if YotpoKafka.kafka_v2
-        consume_with_headers(message)
+        consume_kafka_v2(message)
       else
         consume_kafka_v1(message)
       end
     end
 
-    def consume_with_headers(message)
+    def consume_kafka_v2(message)
       log_info('Start handling consume',
                payload: message.value, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(message.value)
@@ -113,7 +126,7 @@ module YotpoKafka
     def get_fail_topic_name(main_topic)
       main_topic.tr('.', '_')
       group = @group_id.tr('.', '_')
-      main_topic + '.' + group + '.failures'
+      main_topic + '.' + group + failures_topic_suffix
     end
 
     def get_init_retry_header(topic, error)
