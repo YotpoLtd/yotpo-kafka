@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name = 'yotpo-ruby-kafka'
-  s.version = '1.0.20'
+  s.version = '1.0.21'
   s.date = '2019-05-21'
   s.authors = 'Dana & Yaniv'
   s.summary = 'yotpo-kafka: encapsulate ruby-kafka library with consume retry mechanism'
@@ -14,6 +14,7 @@ Gem::Specification.new do |s|
   s.executables   = s.files.grep(%r{^exe/}) { |f| File.basename(f) }
   s.require_paths = ['lib']
 
+  s.add_dependency 'avro_turf'
   s.add_dependency 'rake'
   s.add_dependency 'rest-client'
   s.add_dependency 'ruby-kafka'

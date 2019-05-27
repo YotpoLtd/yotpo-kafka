@@ -1,6 +1,6 @@
+require 'avro_turf/messaging'
 require 'kafka'
 require 'ylogger'
-require 'avro_turf'
 
 module YotpoKafka
   class Consumer
@@ -16,7 +16,7 @@ module YotpoKafka
       @topics = Array(params[:topics]) || nil
       @red_cross = params[:red_cross] || false
       @group_id = params[:group_id] || 'missing_groupid'
-      @avro_encoding = params[:avro_encoding].to_bool || false
+      @avro_encoding = params[:avro_encoding] || false
       @avro = nil
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
       trap('TERM') { @consumer.stop }
@@ -32,8 +32,9 @@ module YotpoKafka
       raise 'Could not initialize'
     end
 
-    def set_avro_schema(registry_url)
+    def set_avro_registry(registry_url)
       @avro = AvroTurf::Messaging.new(registry_url: registry_url)
+      @producer.set_avro_registry(registry_url)
     end
 
     def start_consumer
@@ -44,9 +45,16 @@ module YotpoKafka
         @consumer.commit_offsets
         if @avro_encoding
           raise 'avro schema is not set' unless @avro
+
           schema = message.topic
-          schema = schema.split('.')[0] if schema.includes? failures_topic_suffix
-          message.value = avro.decode(message.value, schema_name: schema)
+          if schema.include? YotpoKafka.failures_topic_suffix
+            if YotpoKafka.kafka_v2
+              message.headers[YotpoKafka.retry_header_key]['MainTopic']
+            else
+              JSON.parse(message.value)['MainTopic']
+            end
+          end
+          message.value = @avro.decode(message.value, schema_name: schema)
         end
         handle_consume(message)
       end
@@ -54,6 +62,8 @@ module YotpoKafka
       log_error('Consumer failed to start: ' + error.message,
                 error: error.message,
                 backtrace: error.backtrace,
+                topics: @topics,
+                group: @group_id,
                 broker_url: YotpoKafka.seed_brokers)
     end
 
@@ -126,7 +136,7 @@ module YotpoKafka
     def get_fail_topic_name(main_topic)
       main_topic.tr('.', '_')
       group = @group_id.tr('.', '_')
-      main_topic + '.' + group + failures_topic_suffix
+      main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
     def get_init_retry_header(topic, error)
@@ -152,13 +162,8 @@ module YotpoKafka
 
     def publish_to_retry_service(retry_hdr, message, kafka_v2, key)
       if (retry_hdr[:CurrentAttempt]).positive?
-        if kafka_v2
-          message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        else
-          message[YotpoKafka.retry_header_key] = retry_hdr.to_json.to_s
-        end
+        set_headers(message, retry_hdr, kafka_v2)
         log_info('Message failed to consumed, send to RETRY',
-                 topic: topic,
                  retry_hdr: retry_hdr.to_s)
         if @seconds_between_retries.zero?
           publish_based_on_version(parsed_hdr['FailuresTopic'], message, kafka_v2, key)
@@ -167,11 +172,18 @@ module YotpoKafka
         end
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
-        payload[YotpoKafka.retry_header_key] = retry_hdr.to_json
+        set_headers(message, retry_hdr, kafka_v2)
         log_info('Message failed to consumed, sent to FATAL',
-                 topic: topic,
                  retry_hdr: retry_hdr.to_s)
         publish_based_on_version(YotpoKafka.fatal_topic, message, kafka_v2, key)
+      end
+    end
+
+    def set_headers(message, retry_hdr, kafka_v2)
+      if kafka_v2
+        message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
+      else
+        message[YotpoKafka.retry_header_key] = retry_hdr.to_json.to_s
       end
     end
 
@@ -193,7 +205,7 @@ module YotpoKafka
       unless message.headers[YotpoKafka.retry_header_key]
         message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, error)
       end
-      retry_hdr = update_retry_header(payload[YotpoKafka.retry_header_key], error)
+      retry_hdr = update_retry_header(message.headers[YotpoKafka.retry_header_key], error)
       publish_to_retry_service(retry_hdr, message, true, message.key)
     end
 

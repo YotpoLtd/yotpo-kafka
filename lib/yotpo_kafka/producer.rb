@@ -4,6 +4,7 @@ require 'securerandom'
 require 'ylogger'
 require 'json'
 require 'rest-client'
+require 'avro_turf/messaging'
 
 module YotpoKafka
   class Producer
@@ -13,7 +14,7 @@ module YotpoKafka
       YotpoKafka::YLoggerKafka.config(true)
       set_log_tag(:yotpo_ruby_kafka)
       @producer = YotpoKafka.kafka.producer
-      @avro_encoding = params[:avro_encoding].to_bool || false
+      @avro_encoding = params[:avro_encoding] || false
       @avro = nil
       @red_cross = params[:red_cross] || false
     rescue => error
@@ -23,7 +24,7 @@ module YotpoKafka
       raise 'Producer failed to initialize'
     end
 
-    def set_avro_schema(registry_url)
+    def set_avro_registry(registry_url)
       @avro = AvroTurf::Messaging.new(registry_url: registry_url)
     end
 
@@ -33,9 +34,16 @@ module YotpoKafka
       payload = payload.to_json if to_json
       if @avro_encoding
         raise 'avro schema is not set' unless @avro
+
         schema = topic
-        schema = schema.split('.')[0] if schema.includes? failures_topic_suffix
-        payload = avro.decode(payload, schema_name: schema)
+        if schema.include? YotpoKafka.failures_topic_suffix
+          if YotpoKafka.kafka_v2
+            message.headers[YotpoKafka.retry_header_key]['MainTopic']
+          else
+            JSON.parse(message.value)['MainTopic']
+          end
+        end
+        payload = @avro.decode(payload, schema_name: schema)
       end
       if YotpoKafka.kafka_v2
         @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
@@ -82,12 +90,20 @@ module YotpoKafka
               'topic': topic,
               'payload': value
             }.to_json, headers = { content_type: 'application/json' })
+            log_info('Saved failed publish',
+                     error: error.message,
+                     kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
+                     last_produce_error: last_error,
+                     topic: topic,
+                     payload: value)
           end
         rescue => error
           log_error('Save publish error failed',
                     error: error.message,
                     kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
-                    last_produce_error: last_error)
+                    last_produce_error: last_error,
+                    topic: topic,
+                    payload: value)
         end
       }
       thread
