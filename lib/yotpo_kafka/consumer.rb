@@ -34,7 +34,6 @@ module YotpoKafka
 
     def set_avro_registry(registry_url)
       @avro = AvroTurf::Messaging.new(registry_url: registry_url)
-      @producer.set_avro_registry(registry_url)
     end
 
     def start_consumer
@@ -43,20 +42,15 @@ module YotpoKafka
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
         @consumer.commit_offsets
+        payload = message.value.force_encoding('UTF-8')
         if @avro_encoding
-          raise 'avro schema is not set' unless @avro
+          unless from_failure_topic(message.topic) && !YotpoKafka.kafka_v2
+            raise 'avro schema is not set' unless @avro
 
-          schema = message.topic
-          if schema.include? YotpoKafka.failures_topic_suffix
-            if YotpoKafka.kafka_v2
-              message.headers[YotpoKafka.retry_header_key]['MainTopic']
-            else
-              JSON.parse(message.value)['MainTopic']
-            end
+            payload = @avro.decode(payload).to_json
           end
-          message.value = @avro.decode(message.value, schema_name: schema)
         end
-        handle_consume(message)
+        handle_consume(payload, message)
       end
     rescue => error
       log_error('Consumer failed to start: ' + error.message,
@@ -67,30 +61,32 @@ module YotpoKafka
                 broker_url: YotpoKafka.seed_brokers)
     end
 
-    def handle_consume(message)
+    def from_failure_topic(topic)
+      topic.include? YotpoKafka.failures_topic_suffix
+    end
+
+    def handle_consume(payload, message)
       if YotpoKafka.kafka_v2
-        consume_kafka_v2(message)
+        consume_kafka_v2(payload, message)
       else
-        consume_kafka_v1(message)
+        consume_kafka_v1(payload, message)
       end
     end
 
-    def consume_kafka_v2(message)
+    def consume_kafka_v2(payload, message)
       log_info('Start handling consume',
-               payload: message.value, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
-      consume_message(message.value)
-      RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
+               payload: payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+      consume_message(payload)
     rescue => error
-      RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
       log_error('Consume error: ' + error.message,
-                topic: message.topic, payload: message.value, backtrace: error.backtrace)
+                topic: message.topic, payload: payload, backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
     end
 
-    def consume_kafka_v1(message)
+    def consume_kafka_v1(payload, message)
       log_info('Start handling consume',
-               payload: message.value, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
-      parsed_payload = JSON.parse(message.value)
+               payload: payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+      parsed_payload = JSON.parse(payload)
       unless parsed_payload.is_a?(Hash)
         # can happen if value is single number
         raise JSON::ParserError.new('Parsing payload to json failed')
@@ -98,15 +94,12 @@ module YotpoKafka
 
       consume_message(parsed_payload)
       log_info('Message consumed and handled', topic: message.topic)
-      RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
     rescue JSON::ParserError => parse_error
-      log_info('Consume json parse error - proceeding without conversion: ' + parse_error.to_s,
+      log_info('Consume kafka_v1, json parse error: ' + parse_error.to_s,
                topic: message.topic,
-               payload: message.value)
-      RedCross.monitor_track(event: 'messageConsumed', properties: { success: true }) if @red_cross
+               payload: payload)
     rescue => error
       log_error('Consume error: ' + error.message, topic: message.topic, backtrace: error.backtrace)
-      RedCross.monitor_track(event: 'messageConsumed', properties: { success: false }) if @red_cross
       handle_error_kafka_v1(parsed_payload, message.topic, message.key, error)
     end
 
@@ -189,7 +182,7 @@ module YotpoKafka
 
     def publish_based_on_version(topic, message, kafka_v2, key = nil)
       if kafka_v2
-        @producer.publish(topic, message.value, message.headers, message.key)
+        @producer.publish(topic, message.value, message.headers, message.key, false)
       else
         @producer.publish(topic, message, {}, key)
       end
