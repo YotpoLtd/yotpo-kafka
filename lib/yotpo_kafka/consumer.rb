@@ -132,13 +132,14 @@ module YotpoKafka
       main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
-    def get_init_retry_header(topic, error)
+    def get_init_retry_header(topic, key, error)
       {
         CurrentAttempt: @num_retries,
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.message,
         MainTopic: topic,
-        FailuresTopic: get_fail_topic_name(topic)
+        FailuresTopic: get_fail_topic_name(topic),
+        Key: key
       }.to_json
     end
 
@@ -149,7 +150,8 @@ module YotpoKafka
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.message,
         MainTopic: parsed_hdr['MainTopic'],
-        FailuresTopic: parsed_hdr['FailuresTopic']
+        FailuresTopic: parsed_hdr['FailuresTopic'],
+        Key: parsed_hdr['Key']
       }
     end
 
@@ -182,24 +184,26 @@ module YotpoKafka
 
     def publish_based_on_version(topic, message, kafka_v2, key = nil)
       if kafka_v2
-        @producer.publish(topic, message.value, message.headers, message.key, false)
+        @producer.publish(topic, message.value, message.headers, key, false)
       else
         @producer.publish(topic, message, {}, key)
       end
     end
 
     def handle_error_kafka_v1(payload, topic, key, error)
-      payload[YotpoKafka.retry_header_key] = get_init_retry_header(topic, error) if payload[YotpoKafka.retry_header_key].nil?
+      key = key.force_encoding('UTF-8') if key
+      payload[YotpoKafka.retry_header_key] = get_init_retry_header(topic, key, error) if payload[YotpoKafka.retry_header_key].nil?
       retry_hdr = update_retry_header(payload[YotpoKafka.retry_header_key], error)
       publish_to_retry_service(retry_hdr, payload, false, key)
     end
 
     def handle_error_kafka_v2(message, error)
+      key = message.key.force_encoding('UTF-8') if message.key
       unless message.headers[YotpoKafka.retry_header_key]
-        message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, error)
+        message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, key, error)
       end
       retry_hdr = update_retry_header(message.headers[YotpoKafka.retry_header_key], error)
-      publish_to_retry_service(retry_hdr, message, true, message.key)
+      publish_to_retry_service(retry_hdr, message, true, key)
     end
 
     def consume_message(_message)
