@@ -4,7 +4,6 @@ require 'securerandom'
 require 'ylogger'
 require 'json'
 require 'rest-client'
-require 'avro_turf/messaging'
 
 module YotpoKafka
   class Producer
@@ -72,7 +71,8 @@ module YotpoKafka
               'produce_time': Time.now.utc.to_datetime.rfc3339,
               'error_msg': last_error,
               'topic': topic,
-              'payload': value
+              'payload': value,
+              'key': key
             }.to_json, headers = { content_type: 'application/json' })
             log_info('Saved failed publish',
                      error: error.message,
@@ -87,6 +87,7 @@ module YotpoKafka
                     kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
                     last_produce_error: last_error,
                     topic: topic,
+                    key: key,
                     payload: value)
         end
       }
