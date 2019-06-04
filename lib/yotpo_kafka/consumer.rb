@@ -1,4 +1,3 @@
-require 'avro_turf/messaging'
 require 'kafka'
 require 'ylogger'
 
@@ -33,6 +32,7 @@ module YotpoKafka
     end
 
     def set_avro_registry(registry_url)
+      require 'avro_turf/messaging'
       @avro = AvroTurf::Messaging.new(registry_url: registry_url)
     end
 

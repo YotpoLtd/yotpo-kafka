@@ -4,7 +4,6 @@ require 'securerandom'
 require 'ylogger'
 require 'json'
 require 'rest-client'
-require 'avro_turf/messaging'
 
 module YotpoKafka
   class Producer
