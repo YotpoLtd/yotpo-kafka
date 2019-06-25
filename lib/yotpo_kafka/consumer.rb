@@ -13,7 +13,6 @@ module YotpoKafka
       @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
       @num_retries = params[:num_retries] || 0
       @topics = Array(params[:topics]) || nil
-      @red_cross = params[:red_cross] || false
       @group_id = params[:group_id] || 'missing_groupid'
       @avro_encoding = params[:avro_encoding] || false
       @avro = nil
@@ -42,7 +41,8 @@ module YotpoKafka
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
         @consumer.commit_offsets
-        payload = message.value.force_encoding('UTF-8')
+        # remember that we got something with key and ignore reties for same key
+        payload = message.value
         if @avro_encoding
           unless from_failure_topic(message.topic) && !YotpoKafka.kafka_v2
             raise 'avro schema is not set' unless @avro
@@ -50,7 +50,9 @@ module YotpoKafka
             payload = @avro.decode(payload).to_json
           end
         end
+        payload = payload.force_encoding('UTF-8')
         handle_consume(payload, message)
+        # say that current handled
       end
     rescue => error
       log_error('Consumer failed to start: ' + error.message,
@@ -78,8 +80,8 @@ module YotpoKafka
                payload: payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(payload)
     rescue => error
-      log_error('Consume error: ' + error.message,
-                topic: message.topic, payload: payload, backtrace: error.backtrace)
+      log_info('consume_kafka_v2 failed in service - handling retry: ' + error.message,
+              topic: message.topic, payload: payload, backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
     end
 
@@ -99,7 +101,8 @@ module YotpoKafka
                topic: message.topic,
                payload: payload)
     rescue => error
-      log_error('Consume error: ' + error.message, topic: message.topic, backtrace: error.backtrace)
+      log_error('consume_kafka_v1 failed in service - handle retry: ' +
+                  error.message, topic: message.topic, backtrace: error.backtrace)
       handle_error_kafka_v1(parsed_payload, message.topic, message.key, error)
     end
 
@@ -191,14 +194,15 @@ module YotpoKafka
     end
 
     def handle_error_kafka_v1(payload, topic, key, error)
-      key = key.force_encoding('UTF-8') if key
+      key = key.force_encoding('UTF-8') unless key.empty?
       payload[YotpoKafka.retry_header_key] = get_init_retry_header(topic, key, error) if payload[YotpoKafka.retry_header_key].nil?
       retry_hdr = update_retry_header(payload[YotpoKafka.retry_header_key], error)
       publish_to_retry_service(retry_hdr, payload, false, key)
     end
 
     def handle_error_kafka_v2(message, error)
-      key = message.key.force_encoding('UTF-8') if message.key
+      key = message.key
+      key = key.force_encoding('UTF-8') unless key.empty?
       unless message.headers[YotpoKafka.retry_header_key]
         message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, key, error)
       end

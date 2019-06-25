@@ -13,7 +13,6 @@ module YotpoKafka
       YotpoKafka::YLoggerKafka.config(true)
       set_log_tag(:yotpo_ruby_kafka)
       @producer = YotpoKafka.kafka.producer
-      @red_cross = params[:red_cross] || false
       @avro_encoding = params[:avro_encoding] || false
     rescue => error
       log_error('Producer failed to initialize',
@@ -22,11 +21,17 @@ module YotpoKafka
       raise 'Producer failed to initialize'
     end
 
+    def set_avro_registry(registry_url)
+      require 'avro_turf/messaging'
+      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
+    end
+
     def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
       payload_print = payload unless @avro_encoding && YotpoKafka.kafka_v2
       log_info('Publishing message',
                topic: topic, message: payload_print, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payload = payload.to_json if to_json
+      payload = @avro.encode(payload) if @avro
       if YotpoKafka.kafka_v2
         @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
       else
@@ -75,7 +80,6 @@ module YotpoKafka
               'key': key
             }.to_json, headers = { content_type: 'application/json' })
             log_info('Saved failed publish',
-                     error: error.message,
                      kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
                      last_produce_error: last_error,
                      topic: topic,
@@ -100,11 +104,9 @@ module YotpoKafka
       payloads.each do |payload|
         publish(topic, payload, kafka_v2_headers, key, to_json)
       end
-      RedCross.monitor_track(event: 'messagePublished', properties: { success: true }) if @red_cross
     rescue => error
       log_error('Publish multi messages failed',
                 exception: error.message)
-      RedCross.monitor_track(event: 'messagePublished', properties: { success: false }) if @red_cross
     end
   end
 end
