@@ -36,7 +36,7 @@ module YotpoKafka
     end
 
     def start_consumer
-      log_info('Starting consume', broker_url: YotpoKafka.seed_brokers)
+      log_debug('Starting consume', broker_url: YotpoKafka.seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
@@ -76,7 +76,7 @@ module YotpoKafka
     end
 
     def consume_kafka_v2(payload, message)
-      log_info('Start handling consume',
+      log_debug('Start handling consume',
                payload: payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(payload)
     rescue => error
@@ -86,7 +86,7 @@ module YotpoKafka
     end
 
     def consume_kafka_v1(payload, message)
-      log_info('Start handling consume',
+      log_debug('Start handling consume',
                payload: payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       parsed_payload = JSON.parse(payload)
       unless parsed_payload.is_a?(Hash)
@@ -95,9 +95,9 @@ module YotpoKafka
       end
 
       consume_message(parsed_payload)
-      log_info('Message consumed and handled', topic: message.topic)
+      log_debug('Message consumed and handled', topic: message.topic)
     rescue JSON::ParserError => parse_error
-      log_info('Consume kafka_v1, json parse error: ' + parse_error.to_s,
+      log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
                topic: message.topic,
                payload: payload)
     rescue => error
@@ -161,7 +161,7 @@ module YotpoKafka
     def publish_to_retry_service(retry_hdr, message, kafka_v2, key)
       if (retry_hdr[:CurrentAttempt]).positive?
         set_headers(message, retry_hdr, kafka_v2)
-        log_info('Message failed to consumed, send to RETRY',
+        log_debug('Message failed to consumed, send to RETRY',
                  retry_hdr: retry_hdr.to_s)
         if @seconds_between_retries.zero?
           publish_based_on_version(parsed_hdr['FailuresTopic'], message, kafka_v2, key)
@@ -171,7 +171,7 @@ module YotpoKafka
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         set_headers(message, retry_hdr, kafka_v2)
-        log_info('Message failed to consumed, sent to FATAL',
+        log_error('Message failed to consumed, sent to FATAL',
                  retry_hdr: retry_hdr.to_s)
         publish_based_on_version(YotpoKafka.fatal_topic, message, kafka_v2, key)
       end

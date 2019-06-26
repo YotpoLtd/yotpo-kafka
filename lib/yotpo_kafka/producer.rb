@@ -28,7 +28,7 @@ module YotpoKafka
 
     def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
       payload_print = payload unless @avro_encoding && YotpoKafka.kafka_v2
-      log_info('Publishing message',
+      log_debug('Publishing message',
                topic: topic, message: payload_print, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payload = payload.to_json if to_json
       payload = @avro.encode(payload) if @avro
@@ -99,7 +99,7 @@ module YotpoKafka
     end
 
     def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)
-      log_info('Publishing multiple messages',
+      log_debug('Publishing multiple messages',
                topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, kafka_v2_headers, key, to_json)
