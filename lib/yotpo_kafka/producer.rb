@@ -26,11 +26,22 @@ module YotpoKafka
       @avro = AvroTurf::Messaging.new(registry_url: registry_url)
     end
 
-    def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
-      payload_print = payload unless @avro_encoding && YotpoKafka.kafka_v2
+    def get_printed_payload(payload)
+      payload.to_s.encode('UTF-8')
+    rescue Encoding::UndefinedConversionError
+      'Msg is not encode-able'
+    end
+
+    def unsafe_publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
+      payload_print = get_printed_payload(payload)
       log_debug('Publishing message',
-               topic: topic, message: payload_print, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
-      payload = payload.to_json if to_json
+               topic: topic, message: payload_print, headers: kafka_v2_headers, key: key,
+               broker_url: YotpoKafka.seed_brokers)
+      begin
+        payload = payload.to_json if to_json
+      rescue Encoding::UndefinedConversionError
+        log_error('Failed to convert msg to json')
+      end
       payload = @avro.encode(payload) if @avro
       if YotpoKafka.kafka_v2
         @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
@@ -38,14 +49,21 @@ module YotpoKafka
         @producer.produce(payload, key: key, topic: topic)
       end
       @producer.deliver_messages
+      log_debug('Publish done')
     rescue => error
-      payload_print = payload unless @avro_encoding && YotpoKafka.kafka_v2
       log_error('Single publish failed',
                 broker_url: YotpoKafka.seed_brokers,
                 message: payload_print,
                 headers: kafka_v2_headers,
                 topic: topic,
                 error: error.message)
+      raise error
+    end
+
+    def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
+      unsafe_publish(topic, payload, kafka_v2_headers, key, to_json)
+    rescue => error
+      post_to_retry_service(error, topic, payload, key)
       raise error
     end
 
@@ -58,12 +76,12 @@ module YotpoKafka
       thread = Thread.new {
         (1..immediate_retry_count).each do |try_num|
           begin
-            publish(topic, value, headers, key)
+            unsafe_publish(topic, value, headers, key)
             is_published = true
             break
           rescue => error
             log_error('Async publish failed, attempt: ' + try_num.to_s,
-                      topic: topic, message: value, headers: headers, key: key, broker_url: YotpoKafka.seed_brokers,
+                      topic: topic, broker_url: YotpoKafka.seed_brokers,
                       error: error.message,
                       backtrace: backtrace_keeper)
             sleep(interval_between_retry)
@@ -71,31 +89,27 @@ module YotpoKafka
           end
         end
         begin
-          unless is_published
-            RestClient.post(YotpoKafka.kafka_retry_service_url + '/v1/kafkaretry/produce_errors', {
-              'produce_time': Time.now.utc.to_datetime.rfc3339,
-              'error_msg': last_error,
-              'topic': topic,
-              'payload': value,
-              'key': key
-            }.to_json, headers = { content_type: 'application/json' })
-            log_info('Saved failed publish',
-                     kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
-                     last_produce_error: last_error,
-                     topic: topic,
-                     payload: value)
-          end
+          post_to_retry_service(last_error, topic, value, key) unless is_published
         rescue => error
           log_error('Save publish error failed',
                     error: error.message,
                     kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
                     last_produce_error: last_error,
-                    topic: topic,
-                    key: key,
-                    payload: value)
+                    topic: topic)
         end
       }
       thread
+    end
+
+    def post_to_retry_service(last_error, topic, value, key)
+      RestClient.post(YotpoKafka.kafka_retry_service_url + '/v1/kafkaretry/produce_errors', {
+        'produce_time': Time.now.utc.to_datetime.rfc3339,
+        'error_msg': last_error,
+        'topic': topic,
+        'payload': value,
+        'key': key
+      }.to_json, headers = { content_type: 'application/json' })
+      log_debug('Saved failed publish')
     end
 
     def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)

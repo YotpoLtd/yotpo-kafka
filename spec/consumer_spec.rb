@@ -38,4 +38,17 @@ describe YotpoKafka do
   it 'getting to consume message' do
     expect { Helpers::ConsumerHandler.new.consume_message('message') }.to_not raise_error
   end
+
+  # TODO: must add handle messages uts
+  # it 'getting to consume message' do
+  #   class DummyMsg
+  #     def headers
+  #       return {}
+  #     end
+  #     def topic
+  #       return 'topic'
+  #     end
+  #   end
+  #   expect { Helpers::ConsumerHandler.new.handle_consume('message', DummyMsg.new) }.to_not raise_error
+  # end
 end

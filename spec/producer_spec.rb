@@ -18,6 +18,11 @@ describe YotpoKafka do
     expect { producer.publish(@topic, @message) }.not_to raise_error
   end
 
+  it 'publish message not utf-8 characters' do
+    producer = YotpoKafka::Producer.new({})
+    expect { producer.publish(@topic, 128.chr) }.not_to raise_error
+  end
+
   it 'publish message with headers' do
     producer = YotpoKafka::Producer.new({})
     headers = { hdr: 'headers' }

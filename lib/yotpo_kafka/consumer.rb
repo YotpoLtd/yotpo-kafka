@@ -50,9 +50,7 @@ module YotpoKafka
             payload = @avro.decode(payload).to_json
           end
         end
-        payload = payload.force_encoding('UTF-8')
         handle_consume(payload, message)
-        # say that current handled
       end
     rescue => error
       log_error('Consumer failed to start: ' + error.message,
@@ -75,19 +73,27 @@ module YotpoKafka
       end
     end
 
+    def get_printed_payload(payload)
+      payload.to_s.encode('UTF-8')
+    rescue Encoding::UndefinedConversionError
+      'Msg is not encode-able'
+    end
+
     def consume_kafka_v2(payload, message)
+      print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
-               payload: payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+               payload: print_payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(payload)
     rescue => error
-      log_info('consume_kafka_v2 failed in service - handling retry: ' + error.message,
-              topic: message.topic, payload: payload, backtrace: error.backtrace)
+      log_error('consume_kafka_v2 failed in service - handling retry: ' + error.message,
+               topic: message.topic, payload: print_payload, backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
     end
 
     def consume_kafka_v1(payload, message)
+      print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
-               payload: payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+               payload: print_payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       parsed_payload = JSON.parse(payload)
       unless parsed_payload.is_a?(Hash)
         # can happen if value is single number
@@ -99,7 +105,7 @@ module YotpoKafka
     rescue JSON::ParserError => parse_error
       log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
                topic: message.topic,
-               payload: payload)
+               payload: print_payload)
     rescue => error
       log_error('consume_kafka_v1 failed in service - handle retry: ' +
                   error.message, topic: message.topic, backtrace: error.backtrace)
