@@ -207,7 +207,7 @@ module YotpoKafka
     end
 
     def handle_error_kafka_v2(message, error)
-      key = message.key
+      key = message.key || ''
       key = key.force_encoding('UTF-8') unless key.empty?
       unless message.headers[YotpoKafka.retry_header_key]
         message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, key, error)
