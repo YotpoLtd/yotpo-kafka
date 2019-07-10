@@ -53,8 +53,6 @@ module YotpoKafka
     rescue => error
       log_error('Single publish failed',
                 broker_url: YotpoKafka.seed_brokers,
-                message: payload_print,
-                headers: kafka_v2_headers,
                 topic: topic,
                 error: error.message)
       raise error
