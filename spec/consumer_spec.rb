@@ -1,6 +1,17 @@
 require 'spec_helper'
 
 describe YotpoKafka do
+  class DummyMsg
+    attr_reader :value, :key, :headers, :topic
+    def initialize(value: 'value', key: 'key', headers: {}, topic: 'topic')
+      @value = value
+      @key = key
+      @headers = headers
+      @topic = topic
+      @bytesize = key.to_s.bytesize + value.to_s.bytesize
+    end
+  end
+
   before(:each) do
     allow_any_instance_of(Kafka).to receive(:create_topic)
     YotpoKafka.seed_brokers = '127.0.0.1:9092'
@@ -39,16 +50,19 @@ describe YotpoKafka do
     expect { Helpers::ConsumerHandler.new.consume_message('message') }.to_not raise_error
   end
 
-  # TODO: must add handle messages uts
-  # it 'getting to consume message' do
-  #   class DummyMsg
-  #     def headers
-  #       return {}
-  #     end
-  #     def topic
-  #       return 'topic'
-  #     end
-  #   end
-  #   expect { Helpers::ConsumerHandler.new.handle_consume('message', DummyMsg.new) }.to_not raise_error
-  # end
+  it 'getting to consume message' do
+    expect { Helpers::ConsumerHandler.new.handle_consume('message', DummyMsg.new) }.to_not raise_error
+  end
+
+  it 'getting to consume message that raises error, key nil' do
+    expect { Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: nil)) }.to_not raise_error
+  end
+
+  it 'getting to consume message that raises error, key not nil' do
+    expect { Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: 'buya')) }.to_not raise_error
+  end
+
+  it 'getting to consume message that raises error, key not utf chars' do
+    expect { Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: 128.chr)) }.to_not raise_error
+  end
 end
