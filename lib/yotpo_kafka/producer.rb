@@ -35,8 +35,8 @@ module YotpoKafka
     def unsafe_publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
       payload_print = get_printed_payload(payload)
       log_debug('Publishing message',
-               topic: topic, message: payload_print, headers: kafka_v2_headers, key: key,
-               broker_url: YotpoKafka.seed_brokers)
+                topic: topic, message: payload_print, headers: kafka_v2_headers, key: key,
+                broker_url: YotpoKafka.seed_brokers)
       begin
         payload = payload.to_json if to_json
       rescue Encoding::UndefinedConversionError
@@ -106,13 +106,13 @@ module YotpoKafka
         'topic': topic,
         'payload': value,
         'key': key
-      }.to_json, headers = { content_type: 'application/json' })
+      }.to_json, content_type: 'application/json')
       log_debug('Saved failed publish')
     end
 
     def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)
       log_debug('Publishing multiple messages',
-               topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
+                topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, kafka_v2_headers, key, to_json)
       end

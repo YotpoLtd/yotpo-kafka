@@ -82,18 +82,18 @@ module YotpoKafka
     def consume_kafka_v2(payload, message)
       print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
-               payload: print_payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+                payload: print_payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       consume_message(payload)
     rescue => error
       log_error('consume_kafka_v2 failed in service - handling retry: ' + error.message,
-               topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+                topic: message.topic, payload: print_payload, backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
     end
 
     def consume_kafka_v1(payload, message)
       print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
-               payload: print_payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+                payload: print_payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
       parsed_payload = JSON.parse(payload)
       unless parsed_payload.is_a?(Hash)
         # can happen if value is single number
@@ -104,8 +104,8 @@ module YotpoKafka
       log_debug('Message consumed and handled', topic: message.topic)
     rescue JSON::ParserError => parse_error
       log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
-               topic: message.topic,
-               payload: print_payload)
+                topic: message.topic,
+                payload: print_payload)
     rescue => error
       log_error('consume_kafka_v1 failed in service - handle retry: ' +
                   error.message, topic: message.topic, backtrace: error.backtrace)
@@ -168,7 +168,7 @@ module YotpoKafka
       if (retry_hdr[:CurrentAttempt]).positive?
         set_headers(message, retry_hdr, kafka_v2)
         log_debug('Message failed to consumed, send to RETRY',
-                 retry_hdr: retry_hdr.to_s)
+                  retry_hdr: retry_hdr.to_s)
         if @seconds_between_retries.zero?
           publish_based_on_version(parsed_hdr['FailuresTopic'], message, kafka_v2, key)
         else
@@ -178,7 +178,7 @@ module YotpoKafka
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         set_headers(message, retry_hdr, kafka_v2)
         log_error('Message failed to consumed, sent to FATAL',
-                 retry_hdr: retry_hdr.to_s)
+                  retry_hdr: retry_hdr.to_s)
         publish_based_on_version(YotpoKafka.fatal_topic, message, kafka_v2, key)
       end
     end
@@ -200,7 +200,12 @@ module YotpoKafka
     end
 
     def handle_error_kafka_v1(payload, topic, key, error)
-      key = key.force_encoding('UTF-8') unless key.empty?
+      begin
+        key = key.to_s.encode('UTF-8') unless key.empty?
+      rescue Encoding::UndefinedConversionError
+        log_error('key sent in invalid format')
+        return
+      end
       payload[YotpoKafka.retry_header_key] = get_init_retry_header(topic, key, error) if payload[YotpoKafka.retry_header_key].nil?
       retry_hdr = update_retry_header(payload[YotpoKafka.retry_header_key], error)
       publish_to_retry_service(retry_hdr, payload, false, key)
@@ -208,7 +213,13 @@ module YotpoKafka
 
     def handle_error_kafka_v2(message, error)
       key = message.key || ''
-      key = key.force_encoding('UTF-8') unless key.empty?
+      begin
+        key = key.to_s.encode('UTF-8') unless key.empty?
+      rescue Encoding::UndefinedConversionError
+        log_error('key sent in invalid format')
+        return
+      end
+
       unless message.headers[YotpoKafka.retry_header_key]
         message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, key, error)
       end
