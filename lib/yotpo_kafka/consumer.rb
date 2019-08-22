@@ -16,6 +16,7 @@ module YotpoKafka
       @group_id = params[:group_id] || 'missing_groupid'
       @avro_encoding = params[:avro_encoding] || false
       @avro = nil
+      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
       trap('TERM') { @consumer.stop }
       @producer = Producer.new(
@@ -94,22 +95,25 @@ module YotpoKafka
       print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
                 payload: print_payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
-      parsed_payload = JSON.parse(payload)
-      unless parsed_payload.is_a?(Hash)
-        # can happen if value is single number
-        raise JSON::ParserError.new('Parsing payload to json failed')
+      if @json_parse
+        begin
+          payload = JSON.parse(payload)
+          unless payload.is_a?(Hash)
+            # can happen if value is single number
+            raise JSON::ParserError.new('Parsing payload to json failed')
+          end
+        rescue JSON::ParserError => parse_error
+          log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
+                    topic: message.topic,
+                    payload: print_payload)
+        end
       end
-
-      consume_message(parsed_payload)
+      consume_message(payload)
       log_debug('Message consumed and handled', topic: message.topic)
-    rescue JSON::ParserError => parse_error
-      log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
-                topic: message.topic,
-                payload: print_payload)
     rescue => error
       log_error('consume_kafka_v1 failed in service - handle retry: ' +
                   error.message, topic: message.topic, backtrace: error.backtrace)
-      handle_error_kafka_v1(parsed_payload, message.topic, message.key, error)
+      handle_error_kafka_v1(payload, message.topic, message.key, error)
     end
 
     def subscribe_to_topics
