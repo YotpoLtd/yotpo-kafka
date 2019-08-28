@@ -66,7 +66,7 @@ module YotpoKafka
     end
 
     def async_publish_with_retry(topic, value, headers = {}, key = nil,
-                                 immediate_retry_count = 3, interval_between_retry = 2)
+                                 immediate_retry_count = 3, interval_between_retry = 2, to_json = true)
       backtrace_keeper = caller
       backtrace_keeper = backtrace_keeper[0..5] if backtrace_keeper.length > 6
       is_published = false
@@ -74,7 +74,7 @@ module YotpoKafka
       thread = Thread.new {
         (1..immediate_retry_count).each do |try_num|
           begin
-            unsafe_publish(topic, value, headers, key)
+            unsafe_publish(topic, value, headers, key, to_json)
             is_published = true
             break
           rescue => error
