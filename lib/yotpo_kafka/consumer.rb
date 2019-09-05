@@ -205,7 +205,7 @@ module YotpoKafka
 
     def handle_error_kafka_v1(payload, topic, key, error)
       begin
-        key = key.to_s.encode('UTF-8') unless key.empty?
+        key = key.to_s.encode('UTF-8') unless key.nil?
       rescue Encoding::UndefinedConversionError
         log_error('key sent in invalid format')
         return
@@ -216,9 +216,9 @@ module YotpoKafka
     end
 
     def handle_error_kafka_v2(message, error)
-      key = message.key || ''
+      key = message.key || nil
       begin
-        key = key.to_s.encode('UTF-8') unless key.empty?
+        key = key.to_s.encode('UTF-8') unless key.nil?
       rescue Encoding::UndefinedConversionError
         log_error('key sent in invalid format')
         return
