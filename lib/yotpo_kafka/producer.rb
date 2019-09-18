@@ -101,11 +101,11 @@ module YotpoKafka
 
     def post_to_retry_service(last_error, topic, value, key)
       RestClient.post(YotpoKafka.kafka_retry_service_url + '/v1/kafkaretry/produce_errors', {
-        'produce_time': Time.now.utc.to_datetime.rfc3339,
-        'error_msg': last_error,
-        'topic': topic,
-        'payload': value,
-        'key': key
+        produce_time: Time.now.utc.to_datetime.rfc3339,
+        error_msg: last_error,
+        topic: topic,
+        payload: value,
+        key: key
       }.to_json, content_type: 'application/json')
       log_debug('Saved failed publish')
     end
