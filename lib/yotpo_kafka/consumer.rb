@@ -6,7 +6,8 @@ module YotpoKafka
     extend Ylogger
 
     def initialize(params = {})
-      YotpoKafka::YLoggerKafka.config(true)
+      use_logstash_logger = params[:logstash_logger] == false ? false : true
+      YotpoKafka::YLoggerKafka.config(use_logstash_logger)
       set_log_tag(:yotpo_ruby_kafka)
       @seconds_between_retries = params[:seconds_between_retries] || 0
       @listen_to_failures = true
@@ -21,7 +22,8 @@ module YotpoKafka
       trap('TERM') { @consumer.stop }
       @producer = Producer.new(
         client_id: @group_id,
-        avro_encoding: @avro_encoding
+        avro_encoding: @avro_encoding,
+        logstash_logger: use_logstash_logger
       )
     rescue => error
       log_error('Consumer Could not initialize',
