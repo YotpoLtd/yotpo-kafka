@@ -10,7 +10,8 @@ module YotpoKafka
     extend Ylogger
 
     def initialize(params = {})
-      YotpoKafka::YLoggerKafka.config(true)
+      use_logstash_logger = params[:logstash_logger] == false ? false : true
+      YotpoKafka::YLoggerKafka.config(use_logstash_logger)
       set_log_tag(:yotpo_ruby_kafka)
       @producer = YotpoKafka.kafka.producer
       @avro_encoding = params[:avro_encoding] || false
