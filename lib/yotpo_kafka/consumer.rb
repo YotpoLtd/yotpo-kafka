@@ -77,7 +77,7 @@ module YotpoKafka
     end
 
     def get_printed_payload(payload)
-      payload.to_s.encode('UTF-8')
+      payload.to_s.force_encoding('UTF-8')
     rescue Encoding::UndefinedConversionError
       'Msg is not encode-able'
     end
