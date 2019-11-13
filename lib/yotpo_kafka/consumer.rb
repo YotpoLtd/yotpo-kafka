@@ -176,7 +176,7 @@ module YotpoKafka
         log_debug('Message failed to consumed, send to RETRY',
                   retry_hdr: retry_hdr.to_s)
         if @seconds_between_retries.zero?
-          publish_based_on_version(parsed_hdr['FailuresTopic'], message, kafka_v2, key)
+          publish_based_on_version(retry_hdr[:FailuresTopic], message, kafka_v2, key)
         else
           publish_based_on_version(YotpoKafka.retry_topic, message, kafka_v2, key)
         end
