@@ -174,7 +174,7 @@ module YotpoKafka
       if (retry_hdr[:CurrentAttempt]).positive?
         set_headers(message, retry_hdr, kafka_v2)
         log_error('Message failed to consumed, send to RETRY',
-                  retry_hdr: retry_hdr.to_s, message: message.to_s)
+                  retry_hdr: retry_hdr.to_s, payload: get_printed_payload(message))
         if @seconds_between_retries.zero?
           publish_based_on_version(retry_hdr[:FailuresTopic], message, kafka_v2, key)
         else
@@ -184,7 +184,7 @@ module YotpoKafka
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         set_headers(message, retry_hdr, kafka_v2)
         log_error('Message failed to consumed, sent to FATAL',
-                  retry_hdr: retry_hdr.to_s, message: message.to_s)
+                  retry_hdr: retry_hdr.to_s, payload: get_printed_payload(message))
         publish_based_on_version(YotpoKafka.fatal_topic, message, kafka_v2, key)
       end
     end
