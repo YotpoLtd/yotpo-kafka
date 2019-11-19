@@ -113,8 +113,8 @@ module YotpoKafka
       consume_message(payload)
       log_debug('Message consumed and handled', topic: message.topic)
     rescue => error
-      log_error('consume_kafka_v1 failed in service - handle retry: ' +
-                  error.message, topic: message.topic, backtrace: error.backtrace)
+      log_error('consume_kafka_v1 failed in service - handle retry: ' + error.message,
+                topic: message.topic, payload: print_payload, backtrace: error.backtrace)
       handle_error_kafka_v1(payload, message.topic, message.key, error)
     end
 
@@ -173,8 +173,8 @@ module YotpoKafka
     def publish_to_retry_service(retry_hdr, message, kafka_v2, key)
       if (retry_hdr[:CurrentAttempt]).positive?
         set_headers(message, retry_hdr, kafka_v2)
-        log_debug('Message failed to consumed, send to RETRY',
-                  retry_hdr: retry_hdr.to_s)
+        log_error('Message failed to consumed, send to RETRY',
+                  retry_hdr: retry_hdr.to_s, message: message.to_s)
         if @seconds_between_retries.zero?
           publish_based_on_version(retry_hdr[:FailuresTopic], message, kafka_v2, key)
         else
@@ -184,7 +184,7 @@ module YotpoKafka
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339
         set_headers(message, retry_hdr, kafka_v2)
         log_error('Message failed to consumed, sent to FATAL',
-                  retry_hdr: retry_hdr.to_s)
+                  retry_hdr: retry_hdr.to_s, message: message.to_s)
         publish_based_on_version(YotpoKafka.fatal_topic, message, kafka_v2, key)
       end
     end
