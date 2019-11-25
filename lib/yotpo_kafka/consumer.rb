@@ -95,7 +95,7 @@ module YotpoKafka
 
     def consume_kafka_v1(payload, message)
       log_info('Start handling consume',
-               topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+               topic: message.topic, broker_url: YotpoKafka.seed_brokers, payload: payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
