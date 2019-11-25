@@ -42,8 +42,6 @@ module YotpoKafka
       log_debug('Starting consume', broker_url: YotpoKafka.seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
-        @consumer.mark_message_as_processed(message)
-        @consumer.commit_offsets
         # remember that we got something with key and ignore reties for same key
         payload = message.value
         if @avro_encoding
@@ -95,7 +93,7 @@ module YotpoKafka
 
     def consume_kafka_v1(payload, message)
       log_info('Start handling consume',
-               topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+               topic: message.topic, broker_url: YotpoKafka.seed_brokers, payload: payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
