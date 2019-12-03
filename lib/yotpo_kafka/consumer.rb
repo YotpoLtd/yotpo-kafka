@@ -19,7 +19,6 @@ module YotpoKafka
       @avro = nil
       @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
       @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
-      trap('TERM') { @consumer.stop }
       @producer = Producer.new(
         client_id: @group_id,
         avro_encoding: @avro_encoding,
@@ -42,6 +41,8 @@ module YotpoKafka
       log_debug('Starting consume', broker_url: YotpoKafka.seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
+        @consumer.mark_message_as_processed(message)
+        @consumer.commit_offsets
         # remember that we got something with key and ignore reties for same key
         payload = message.value
         if @avro_encoding
@@ -89,6 +90,11 @@ module YotpoKafka
       log_error('consume_kafka_v2 failed in service - handling retry: ' + error.message,
                 topic: message.topic, payload: print_payload, backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
+    rescue SignalException => error
+      log_error('Signal Exception sending message to retry in kafka v2 and closing server, error: ' + error.message,
+                topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+      handle_error_kafka_v2(message, error)
+      @consumer.stop
     end
 
     def consume_kafka_v1(payload, message)
@@ -115,6 +121,11 @@ module YotpoKafka
       log_error('consume_kafka_v1 failed in service - printed payload: ' + print_payload,
                 topic: message.topic, backtrace: error.backtrace)
       handle_error_kafka_v1(payload, message.topic, message.key, error)
+    rescue SignalException => error
+      log_error('Signal Exception sending message to retry in kafka v1 and closing server, error: ' + error.message,
+                topic: message.topic, backtrace: error.backtrace)
+      handle_error_kafka_v1(payload, message.topic, message.key, error)
+      @consumer.stop
     end
 
     def subscribe_to_topics
