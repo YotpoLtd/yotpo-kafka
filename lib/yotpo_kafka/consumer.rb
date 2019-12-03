@@ -42,8 +42,6 @@ module YotpoKafka
       log_debug('Starting consume', broker_url: YotpoKafka.seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
-        @consumer.mark_message_as_processed(message)
-        @consumer.commit_offsets
         # remember that we got something with key and ignore reties for same key
         payload = message.value
         if @avro_encoding
@@ -78,8 +76,8 @@ module YotpoKafka
 
     def get_printed_payload(payload)
       payload.to_s.force_encoding('UTF-8')
-    rescue Encoding::UndefinedConversionError
-      'Msg is not encode-able'
+    rescue => error
+      log_error('kafka_v1 encoding error: ' + error.message, backtrace: error.backtrace)
     end
 
     def consume_kafka_v2(payload, message)
@@ -94,9 +92,8 @@ module YotpoKafka
     end
 
     def consume_kafka_v1(payload, message)
-      print_payload = get_printed_payload(payload)
-      log_debug('Start handling consume',
-                payload: print_payload, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+      log_info('Start handling consume',
+               topic: message.topic, broker_url: YotpoKafka.seed_brokers, payload: payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
@@ -106,15 +103,17 @@ module YotpoKafka
           end
         rescue JSON::ParserError => parse_error
           log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
-                    topic: message.topic,
-                    payload: print_payload)
+                    topic: message.topic)
         end
       end
       consume_message(payload)
       log_debug('Message consumed and handled', topic: message.topic)
     rescue => error
       log_error('consume_kafka_v1 failed in service - handle retry: ' + error.message,
-                topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+                topic: message.topic, backtrace: error.backtrace)
+      print_payload = get_printed_payload(payload)
+      log_error('consume_kafka_v1 failed in service - printed payload: ' + print_payload,
+                topic: message.topic, backtrace: error.backtrace)
       handle_error_kafka_v1(payload, message.topic, message.key, error)
     end
 
@@ -206,6 +205,7 @@ module YotpoKafka
     end
 
     def handle_error_kafka_v1(payload, topic, key, error)
+      log_info('handle_error_kafka_v1', topic: topic)
       begin
         key = key.to_s.encode('UTF-8') unless key.nil?
       rescue Encoding::UndefinedConversionError
