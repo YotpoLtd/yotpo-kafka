@@ -44,12 +44,7 @@ module YotpoKafka
         log_error('Failed to convert msg to json')
       end
       payload = @avro.encode(payload) if @avro
-      if YotpoKafka.kafka_v2
-        @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
-      else
-        @producer.produce(payload, key: key, topic: topic)
-      end
-      @producer.deliver_messages
+      handle_produce(payload, key, topic, kafka_v2_headers)
       log_debug('Publish done')
     rescue => error
       log_error('Single publish failed',
@@ -64,6 +59,15 @@ module YotpoKafka
     rescue => error
       post_to_retry_service(error, topic, payload, key)
       raise error
+    end
+
+    def handle_produce(payload, key, topic, kafka_v2_headers)
+      if YotpoKafka.kafka_v2
+        @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
+      else
+        @producer.produce(payload, key: key, topic: topic)
+      end
+      @producer.deliver_messages
     end
 
     def async_publish_with_retry(topic, value, headers = {}, key = nil,

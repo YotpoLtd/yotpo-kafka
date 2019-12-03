@@ -65,4 +65,46 @@ describe YotpoKafka do
   it 'getting to consume message that raises error, key not utf chars' do
     expect { Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: 128.chr)) }.to_not raise_error
   end
+
+  it 'consumer create failure topic according to setting' do
+    consumer = YotpoKafka::Consumer.new(topics: 'blue2', listen_to_failures: true)
+    expect(YotpoKafka.kafka).to receive(:create_topic).once
+    consumer.subscribe_to_topics
+  end
+
+  it 'consumer doesnt create failure topic according to setting' do
+    consumer = YotpoKafka::Consumer.new(topics: 'blue2', listen_to_failures: false)
+    expect(YotpoKafka.kafka).to receive(:create_topic).never
+    consumer.subscribe_to_topics
+  end
+
+  it 'handle error if consumer raises' do
+    expect_any_instance_of(YotpoKafka::Consumer).to receive(:handle_error_kafka_v2).once.and_call_original
+    expect_any_instance_of(YotpoKafka::Consumer).to receive(:publish_to_retry_service).once.and_call_original
+    expect_any_instance_of(YotpoKafka::Producer).to receive(:publish)
+    Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: 'buya'))
+  end
+
+  it 'sets failure headers if error' do
+    message = DummyMsg.new(key: 'buya')
+    Helpers::ConsumerHandlerWithError.new.handle_consume('message', message)
+    headers = JSON.parse(message.headers['retry'])
+    expect(headers['CurrentAttempt']).to eq(-1)
+  end
+
+  it 'reduce attempts in headers if error' do
+    expect_any_instance_of(YotpoKafka::Producer).to receive(:publish).with('topic.missing_groupid.failures', anything, anything, anything, anything)
+    message = DummyMsg.new(key: 'buya')
+    Helpers::ConsumerHandlerWithError.new(num_retries: 3).handle_consume('message', message)
+    headers = JSON.parse(message.headers['retry'])
+    expect(headers['CurrentAttempt']).to eq(2)
+  end
+
+  it 'publish to retry service if seconds between retries' do
+    expect_any_instance_of(YotpoKafka::Producer).to receive(:publish).with('retry_handler', anything, anything, anything, anything)
+    message = DummyMsg.new(key: 'buya')
+    Helpers::ConsumerHandlerWithError.new(num_retries: 3, seconds_between_retries: 2).handle_consume('message', message)
+    headers = JSON.parse(message.headers['retry'])
+    expect(headers['CurrentAttempt']).to eq(2)
+  end
 end
