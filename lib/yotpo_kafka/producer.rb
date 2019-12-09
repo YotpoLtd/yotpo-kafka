@@ -11,9 +11,10 @@ module YotpoKafka
 
     def initialize(params = {})
       use_logstash_logger = params[:logstash_logger] == false ? false : true
+      compression = params[:compression] ? :gzip : nil
       YotpoKafka::YLoggerKafka.config(use_logstash_logger)
       set_log_tag(:yotpo_ruby_kafka)
-      @producer = YotpoKafka.kafka.producer
+      @producer = YotpoKafka.kafka.producer(compression_codec: compression)
       @avro_encoding = params[:avro_encoding] || false
     rescue => error
       log_error('Producer failed to initialize',
