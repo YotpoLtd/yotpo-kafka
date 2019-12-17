@@ -10,16 +10,18 @@ module YotpoKafka
     extend Ylogger
 
     def initialize(params = {})
-      use_logstash_logger = params[:logstash_logger] == false ? false : true
       compression = params[:compression] ? :gzip : nil
+      use_logstash_logger = params[:logstash_logger] != false
       YotpoKafka::YLoggerKafka.config(use_logstash_logger)
       set_log_tag(:yotpo_ruby_kafka)
-      @producer = YotpoKafka.kafka.producer(compression_codec: compression)
+      @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
+      @kafka = Kafka.new(@seed_brokers)
+      @producer = @kafka.producer(compression_codec: compression)
       @avro_encoding = params[:avro_encoding] || false
     rescue => error
       log_error('Producer failed to initialize',
                 exception: error.message,
-                broker_url: YotpoKafka.seed_brokers)
+                broker_url: @seed_brokers)
       raise 'Producer failed to initialize'
     end
 
@@ -38,7 +40,7 @@ module YotpoKafka
       payload_print = get_printed_payload(payload)
       log_debug('Publishing message',
                 topic: topic, message: payload_print, headers: kafka_v2_headers, key: key,
-                broker_url: YotpoKafka.seed_brokers)
+                broker_url: @seed_brokers)
       begin
         payload = payload.to_json if to_json
       rescue Encoding::UndefinedConversionError
@@ -49,7 +51,7 @@ module YotpoKafka
       log_debug('Publish done')
     rescue => error
       log_error('Single publish failed',
-                broker_url: YotpoKafka.seed_brokers,
+                broker_url: @seed_brokers,
                 topic: topic,
                 error: error.message)
       raise error
@@ -85,7 +87,7 @@ module YotpoKafka
             break
           rescue => error
             log_error('Async publish failed, attempt: ' + try_num.to_s,
-                      topic: topic, broker_url: YotpoKafka.seed_brokers,
+                      topic: topic, broker_url: @seed_brokers,
                       error: error.message,
                       backtrace: backtrace_keeper)
             sleep(interval_between_retry)
@@ -113,12 +115,12 @@ module YotpoKafka
         payload: value,
         key: key
       }.to_json, content_type: 'application/json')
-      log_debug('Saved failed publish')
+      log_info('Saved failed publish', error_msg: last_error, topic: topic)
     end
 
     def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)
       log_debug('Publishing multiple messages',
-                topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: YotpoKafka.seed_brokers)
+                topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: @seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, kafka_v2_headers, key, to_json)
       end

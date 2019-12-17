@@ -5,10 +5,14 @@ module YotpoKafka
   class Consumer
     extend Ylogger
 
+    attr_accessor :kafka
+
     def initialize(params = {})
-      use_logstash_logger = params[:logstash_logger] == false ? false : true
+      use_logstash_logger = params[:logstash_logger] != false
       YotpoKafka::YLoggerKafka.config(use_logstash_logger)
       set_log_tag(:yotpo_ruby_kafka)
+      @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
+      @kafka = Kafka.new(@seed_brokers)
       @seconds_between_retries = params[:seconds_between_retries] || 0
       @listen_to_failures = true
       @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
@@ -18,16 +22,17 @@ module YotpoKafka
       @avro_encoding = params[:avro_encoding] || false
       @avro = nil
       @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
-      @consumer = YotpoKafka.kafka.consumer(group_id: @group_id)
+      @consumer = @kafka.consumer(group_id: @group_id)
       @producer = Producer.new(
         client_id: @group_id,
         avro_encoding: @avro_encoding,
-        logstash_logger: use_logstash_logger
+        logstash_logger: use_logstash_logger,
+        broker_url: @seed_brokers
       )
     rescue => error
       log_error('Consumer Could not initialize',
                 error: error.message,
-                broker_url: YotpoKafka.seed_brokers,
+                broker_url: @seed_brokers,
                 backtrace: error.backtrace)
       raise 'Could not initialize'
     end
@@ -38,7 +43,7 @@ module YotpoKafka
     end
 
     def start_consumer
-      log_debug('Starting consume', broker_url: YotpoKafka.seed_brokers)
+      log_debug('Starting consume', broker_url: @seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)
@@ -60,7 +65,7 @@ module YotpoKafka
                 backtrace: error.backtrace,
                 topics: @topics,
                 group: @group_id,
-                broker_url: YotpoKafka.seed_brokers)
+                broker_url: @seed_brokers)
     end
 
     def from_failure_topic(topic)
@@ -84,7 +89,7 @@ module YotpoKafka
     def consume_kafka_v2(payload, message)
       print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
-                payload: print_payload, headers: message.headers, topic: message.topic, broker_url: YotpoKafka.seed_brokers)
+                payload: print_payload, headers: message.headers, topic: message.topic, broker_url: @seed_brokers)
       consume_message(payload)
     rescue => error
       log_error('consume_kafka_v2 failed in service - handling retry: ' + error.message,
@@ -99,7 +104,7 @@ module YotpoKafka
 
     def consume_kafka_v1(payload, message)
       log_info('Start handling consume',
-               topic: message.topic, broker_url: YotpoKafka.seed_brokers, payload: payload)
+               topic: message.topic, broker_url: @seed_brokers, payload: payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
@@ -139,9 +144,9 @@ module YotpoKafka
           log_info('Created new topic: ' + failure_topic,
                    partitions_num: YotpoKafka.default_partitions_num,
                    replication_factor: YotpoKafka.default_replication_factor)
-          YotpoKafka.kafka.create_topic(failure_topic,
-                                        num_partitions: YotpoKafka.default_partitions_num.to_i,
-                                        replication_factor: YotpoKafka.default_replication_factor.to_i)
+          @kafka.create_topic(failure_topic,
+                              num_partitions: YotpoKafka.default_partitions_num.to_i,
+                              replication_factor: YotpoKafka.default_replication_factor.to_i)
         rescue Kafka::TopicAlreadyExists
           nil
         end

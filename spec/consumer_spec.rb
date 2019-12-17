@@ -14,7 +14,7 @@ describe YotpoKafka do
 
   before(:each) do
     allow_any_instance_of(Kafka).to receive(:create_topic)
-    YotpoKafka.seed_brokers = '127.0.0.1:9092'
+    @seed_brokers = '127.0.0.1:9092'
   end
 
   it 'config empty consumer without handler expects runtime error' do
@@ -68,13 +68,13 @@ describe YotpoKafka do
 
   it 'consumer create failure topic according to setting' do
     consumer = YotpoKafka::Consumer.new(topics: 'blue2', listen_to_failures: true)
-    expect(YotpoKafka.kafka).to receive(:create_topic).once
+    expect(consumer.kafka).to receive(:create_topic).once
     consumer.subscribe_to_topics
   end
 
   it 'consumer doesnt create failure topic according to setting' do
     consumer = YotpoKafka::Consumer.new(topics: 'blue2', listen_to_failures: false)
-    expect(YotpoKafka.kafka).to receive(:create_topic).never
+    expect(consumer.kafka).to receive(:create_topic).never
     consumer.subscribe_to_topics
   end
 
