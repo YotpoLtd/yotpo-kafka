@@ -103,8 +103,9 @@ module YotpoKafka
     end
 
     def consume_kafka_v1(payload, message)
+      print_payload = get_printed_payload(payload)
       log_info('Start handling consume',
-               topic: message.topic, broker_url: @seed_brokers, payload: payload)
+               topic: message.topic, broker_url: @seed_brokers, payload: print_payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
@@ -122,7 +123,6 @@ module YotpoKafka
     rescue => error
       log_error('consume_kafka_v1 failed in service - handle retry: ' + error.message,
                 topic: message.topic, backtrace: error.backtrace)
-      print_payload = get_printed_payload(payload)
       log_error('consume_kafka_v1 failed in service - printed payload: ' + print_payload,
                 topic: message.topic, backtrace: error.backtrace)
       handle_error_kafka_v1(payload, message.topic, message.key, error)
