@@ -83,21 +83,32 @@ module YotpoKafka
     def get_printed_payload(payload)
       payload.to_s.force_encoding('UTF-8')
     rescue => error
-      log_error('kafka_v1 encoding error: ' + error.message, backtrace: error.backtrace)
+      log_error('kafka_v1 encoding error',
+                error: error.message,
+                backtrace: error.backtrace)
     end
 
     def consume_kafka_v2(payload, message)
       print_payload = get_printed_payload(payload)
       log_debug('Start handling consume',
-                payload: print_payload, headers: message.headers, topic: message.topic, broker_url: @seed_brokers)
+                payload: print_payload,
+                headers: message.headers,
+                topic: message.topic,
+                broker_url: @seed_brokers)
       consume_message(payload)
     rescue => error
-      log_error('consume_kafka_v2 failed in service - handling retry: ' + error.message,
-                topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+      log_error('consume_kafka_v2 failed in service - handling retry',
+                error: error.message,
+                topic: message.topic,
+                payload: print_payload,
+                backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
     rescue SignalException => error
-      log_error('Signal Exception sending message to retry in kafka v2 and closing server, error: ' + error.message,
-                topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+      log_error('Signal Exception sending message to retry in kafka v2 and closing server',
+                error: error.message,
+                topic: message.topic,
+                payload: print_payload,
+                backtrace: error.backtrace)
       handle_error_kafka_v2(message, error)
       @consumer.stop
     end
@@ -105,7 +116,9 @@ module YotpoKafka
     def consume_kafka_v1(payload, message)
       print_payload = get_printed_payload(payload)
       log_info('Start handling consume',
-               topic: message.topic, broker_url: @seed_brokers, payload: print_payload)
+               topic: message.topic,
+               broker_url: @seed_brokers,
+               payload: print_payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
@@ -114,21 +127,25 @@ module YotpoKafka
             raise JSON::ParserError.new('Parsing payload to json failed')
           end
         rescue JSON::ParserError => parse_error
-          log_error('Consume kafka_v1, json parse error: ' + parse_error.to_s,
+          log_error('Consume kafka_v1, json parse error',
+                    error: parse_error.to_s,
                     topic: message.topic)
         end
       end
       consume_message(payload)
       log_debug('Message consumed and handled', topic: message.topic)
     rescue => error
-      log_error('consume_kafka_v1 failed in service - handle retry: ' + error.message,
-                topic: message.topic, backtrace: error.backtrace)
-      log_error('consume_kafka_v1 failed in service - printed payload: ' + print_payload,
-                topic: message.topic, backtrace: error.backtrace)
+      log_error('consume_kafka_v1 failed in service - handle retry',
+                error: error.message,
+                topic: message.topic,
+                backtrace: error.backtrace,
+                payload: print_payload)
       handle_error_kafka_v1(payload, message.topic, message.key, error)
     rescue SignalException => error
-      log_error('Signal Exception sending message to retry in kafka v1 and closing server, error: ' + error.message,
-                topic: message.topic, backtrace: error.backtrace)
+      log_error('Signal Exception sending message to retry in kafka v1 and closing server',
+                error: error.message,
+                topic: message.topic,
+                backtrace: error.backtrace)
       handle_error_kafka_v1(payload, message.topic, message.key, error)
       @consumer.stop
     end

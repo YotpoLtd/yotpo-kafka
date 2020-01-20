@@ -39,7 +39,9 @@ module YotpoKafka
     def unsafe_publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
       payload_print = get_printed_payload(payload)
       log_debug('Publishing message',
-                topic: topic, message: payload_print, headers: kafka_v2_headers, key: key,
+                topic: topic, message: payload_print,
+                headers: kafka_v2_headers,
+                key: key,
                 broker_url: @seed_brokers)
       begin
         payload = payload.to_json if to_json
@@ -86,8 +88,10 @@ module YotpoKafka
             is_published = true
             break
           rescue => error
-            log_error('Async publish failed, attempt: ' + try_num.to_s,
-                      topic: topic, broker_url: @seed_brokers,
+            log_error('Async publish failed',
+                      attempt: try_num.to_s,
+                      topic: topic,
+                      broker_url: @seed_brokers,
                       error: error.message,
                       backtrace: backtrace_keeper)
             sleep(interval_between_retry)
@@ -115,12 +119,18 @@ module YotpoKafka
         payload: value,
         key: key
       }.to_json, content_type: 'application/json')
-      log_info('Saved failed publish', error_msg: last_error, topic: topic)
+      log_info('Saved failed publish',
+               error_msg: last_error,
+               topic: topic)
     end
 
     def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)
       log_debug('Publishing multiple messages',
-                topic: topic, message: value, headers: kafka_v2_headers, key: key, broker_url: @seed_brokers)
+                topic: topic,
+                message: value,
+                headers: kafka_v2_headers,
+                key: key,
+                broker_url: @seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, kafka_v2_headers, key, to_json)
       end
