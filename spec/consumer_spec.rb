@@ -1,6 +1,6 @@
 require 'spec_helper'
 
-describe YotpoKafka do
+describe YotpoKafka::Consumer do
   class DummyMsg
     attr_reader :value, :key, :headers, :topic
     def initialize(value: 'value', key: 'key', headers: {}, topic: 'topic')
