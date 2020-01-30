@@ -18,6 +18,7 @@ module YotpoKafka
       @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
       if !YotpoKafka.kafka_v2 && !@json_parse
         @listen_to_failures = false
+        log_info('retry mechanism not supports messages without header and without json parsing, setting listen_to_failures=false')
       else
         @listen_to_failures = params[:listen_to_failures].nil? ? true : params[:listen_to_failures]
       end
