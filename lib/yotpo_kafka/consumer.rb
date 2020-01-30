@@ -14,14 +14,19 @@ module YotpoKafka
       @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
       @kafka = Kafka.new(@seed_brokers)
       @seconds_between_retries = params[:seconds_between_retries] || 0
-      @listen_to_failures = true
-      @listen_to_failures = params[:listen_to_failures] unless params[:listen_to_failures].nil?
+
+      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
+      if !YotpoKafka.kafka_v2 && !@json_parse
+        @listen_to_failures = false
+      else
+        @listen_to_failures = params[:listen_to_failures].nil? ? true : params[:listen_to_failures]
+      end
+
       @num_retries = params[:num_retries] || 0
       @topics = Array(params[:topics]) || nil
       @group_id = params[:group_id] || 'missing_groupid'
       @avro_encoding = params[:avro_encoding] || false
       @avro = nil
-      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
       @consumer = @kafka.consumer(group_id: @group_id)
       @producer = Producer.new(
         client_id: @group_id,
@@ -97,19 +102,12 @@ module YotpoKafka
                 broker_url: @seed_brokers)
       consume_message(payload)
     rescue => error
-      log_error('consume_kafka_v2 failed in service - handling retry',
-                error: error.message,
-                topic: message.topic,
-                payload: print_payload,
-                backtrace: error.backtrace)
-      handle_error_kafka_v2(message, error)
+      handle_error_kafka_v2(message, error, print_payload)
     rescue SignalException => error
-      log_error('Signal Exception sending message to retry in kafka v2 and closing server',
+      log_error('Signal Exception',
                 error: error.message,
-                topic: message.topic,
-                payload: print_payload,
                 backtrace: error.backtrace)
-      handle_error_kafka_v2(message, error)
+      handle_error_kafka_v2(message, error, print_payload)
       @consumer.stop
     end
 
@@ -135,18 +133,12 @@ module YotpoKafka
       consume_message(payload)
       log_debug('Message consumed and handled', topic: message.topic)
     rescue => error
-      log_error('consume_kafka_v1 failed in service - handle retry',
-                error: error.message,
-                topic: message.topic,
-                backtrace: error.backtrace,
-                payload: print_payload)
-      handle_error_kafka_v1(payload, message.topic, message.key, error)
+      handle_error_kafka_v1(payload, message.topic, message.key, error, print_payload)
     rescue SignalException => error
-      log_error('Signal Exception sending message to retry in kafka v1 and closing server',
+      log_error('Signal Exception',
                 error: error.message,
-                topic: message.topic,
                 backtrace: error.backtrace)
-      handle_error_kafka_v1(payload, message.topic, message.key, error)
+      handle_error_kafka_v1(payload, message.topic, message.key, error, print_payload)
       @consumer.stop
     end
 
@@ -237,8 +229,22 @@ module YotpoKafka
       end
     end
 
-    def handle_error_kafka_v1(payload, topic, key, error)
-      log_info('handle_error_kafka_v1', topic: topic)
+    def handle_error_kafka_v1(payload, topic, key, error, print_payload)
+      unless @listen_to_failures
+        log_error('handle_error_kafka_v1 - not handling retry',
+                  error: error.message,
+                  topic: topic,
+                  backtrace: error.backtrace,
+                  payload: print_payload)
+        return
+      end
+
+      log_error('handle_error_kafka_v1 - handling retry',
+                error: error.message,
+                topic: topic,
+                payload: print_payload,
+                backtrace: error.backtrace)
+
       begin
         key = key.to_s.encode('UTF-8') unless key.nil?
       rescue Encoding::UndefinedConversionError
@@ -250,7 +256,22 @@ module YotpoKafka
       publish_to_retry_service(retry_hdr, payload, false, key)
     end
 
-    def handle_error_kafka_v2(message, error)
+    def handle_error_kafka_v2(message, error, print_payload)
+      unless @listen_to_failures
+        log_error('handle_error_kafka_v2 - not handling retry',
+                  error: error.message,
+                  topic: message.topic,
+                  payload: print_payload,
+                  backtrace: error.backtrace)
+        return
+      end
+
+      log_error('handle_error_kafka_v2 - handling retry',
+                error: error.message,
+                topic: message.topic,
+                payload: print_payload,
+                backtrace: error.backtrace)
+
       key = message.key || nil
       begin
         key = key.to_s.encode('UTF-8') unless key.nil?
