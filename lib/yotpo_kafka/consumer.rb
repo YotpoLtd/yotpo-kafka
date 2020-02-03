@@ -1,81 +1,19 @@
-require 'kafka'
-require 'ylogger'
-
 module YotpoKafka
-  class Consumer
-    extend Ylogger
-
-    attr_accessor :kafka
+  class Consumer < YotpoKafka::BaseConsumer
 
     def initialize(params = {})
-      use_logstash_logger = params[:logstash_logger] != false
-      YotpoKafka::YLoggerKafka.config(use_logstash_logger)
-      set_log_tag(:yotpo_ruby_kafka)
-      @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
-      @kafka = Kafka.new(@seed_brokers)
-      @seconds_between_retries = params[:seconds_between_retries] || 0
+      super
 
-      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
-      if !YotpoKafka.kafka_v2 && !@json_parse
-        @listen_to_failures = false
-        log_info('retry mechanism not supports messages without header and without json parsing, setting listen_to_failures=false')
-      else
-        @listen_to_failures = params[:listen_to_failures].nil? ? true : params[:listen_to_failures]
-      end
-
-      @num_retries = params[:num_retries] || 0
-      @topics = Array(params[:topics]) || nil
-      @group_id = params[:group_id] || 'missing_groupid'
-      @avro_encoding = params[:avro_encoding] || false
-      @avro = nil
-      @consumer = @kafka.consumer(group_id: @group_id)
       @producer = Producer.new(
         client_id: @group_id,
         avro_encoding: @avro_encoding,
-        logstash_logger: use_logstash_logger,
+        logstash_logger: @use_logstash_logger,
         broker_url: @seed_brokers
       )
-    rescue => error
-      log_error('Consumer Could not initialize',
-                error: error.message,
-                broker_url: @seed_brokers,
-                backtrace: error.backtrace)
-      raise 'Could not initialize'
     end
 
-    def set_avro_registry(registry_url)
-      require 'avro_turf/messaging'
-      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
-    end
-
-    def start_consumer
-      log_debug('Starting consume', broker_url: @seed_brokers)
-      subscribe_to_topics
-      @consumer.each_message do |message|
-        @consumer.mark_message_as_processed(message)
-        @consumer.commit_offsets
-        # remember that we got something with key and ignore reties for same key
-        payload = message.value
-        if @avro_encoding
-          unless from_failure_topic(message.topic) && !YotpoKafka.kafka_v2
-            raise 'avro schema is not set' unless @avro
-
-            payload = @avro.decode(payload).to_json
-          end
-        end
-        handle_consume(payload, message)
-      end
-    rescue => error
-      log_error('Consumer failed to start: ' + error.message,
-                error: error.message,
-                backtrace: error.backtrace,
-                topics: @topics,
-                group: @group_id,
-                broker_url: @seed_brokers)
-    end
-
-    def from_failure_topic(topic)
-      topic.include? YotpoKafka.failures_topic_suffix
+    def extract_payload(message)
+      message.value
     end
 
     def handle_consume(payload, message)
@@ -84,14 +22,6 @@ module YotpoKafka
       else
         consume_kafka_v1(payload, message)
       end
-    end
-
-    def get_printed_payload(payload)
-      payload.to_s.force_encoding('UTF-8')
-    rescue => error
-      log_error('kafka_v1 encoding error',
-                error: error.message,
-                backtrace: error.backtrace)
     end
 
     def consume_kafka_v2(payload, message)
@@ -141,35 +71,6 @@ module YotpoKafka
                 backtrace: error.backtrace)
       handle_error_kafka_v1(payload, message.topic, message.key, error, print_payload)
       @consumer.stop
-    end
-
-    def subscribe_to_topics
-      @topics.each do |t|
-        @consumer.subscribe(t)
-        log_info('Consumer subscribes to topic: ' + t)
-        next unless @listen_to_failures
-
-        failure_topic = get_fail_topic_name(t)
-        begin
-          log_info('Created new topic: ' + failure_topic,
-                   partitions_num: YotpoKafka.default_partitions_num,
-                   replication_factor: YotpoKafka.default_replication_factor)
-          @kafka.create_topic(failure_topic,
-                              num_partitions: YotpoKafka.default_partitions_num.to_i,
-                              replication_factor: YotpoKafka.default_replication_factor.to_i)
-        rescue Kafka::TopicAlreadyExists
-          nil
-        end
-
-        @consumer.subscribe(failure_topic)
-        log_info('Consume subscribes to topic: ' + failure_topic)
-      end
-    end
-
-    def get_fail_topic_name(main_topic)
-      main_topic.tr('.', '_')
-      group = @group_id.tr('.', '_')
-      main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
     def get_init_retry_header(topic, key, error)
@@ -286,10 +187,6 @@ module YotpoKafka
       end
       retry_hdr = update_retry_header(message.headers[YotpoKafka.retry_header_key], error)
       publish_to_retry_service(retry_hdr, message, true, key)
-    end
-
-    def consume_message(_message)
-      raise NotImplementedError
     end
   end
 end

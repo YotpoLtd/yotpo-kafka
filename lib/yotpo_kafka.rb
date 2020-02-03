@@ -1,7 +1,10 @@
 require_relative '../config/initializers/ylogger'
 require 'kafka'
+require 'ylogger'
 require 'yotpo_kafka/producer'
+require 'yotpo_kafka/base_consumer'
 require 'yotpo_kafka/consumer'
+require 'yotpo_kafka/avro_consumer'
 
 module YotpoKafka
   class << self; attr_accessor :kafka_retry_service_url; end
