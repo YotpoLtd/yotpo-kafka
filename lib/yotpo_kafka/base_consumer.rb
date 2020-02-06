@@ -11,7 +11,8 @@ module YotpoKafka
       @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
       @kafka = Kafka.new(@seed_brokers)
       @seconds_between_retries = params[:seconds_between_retries] || 0
-      set_retry_policy(params[:listen_to_failures], params[:json_parse])
+      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
+      set_retry_policy(params[:listen_to_failures])
       @num_retries = params[:num_retries] || 0
       @topics = Array(params[:topics]) || nil
       @group_id = params[:group_id] || 'missing_groupid'
@@ -69,7 +70,7 @@ module YotpoKafka
 
     def get_fail_topic_name(main_topic)
       main_topic.tr('.', '_')
-      group = @group_id.tr('.', '_')
+      group = @group_id.tr('.', '_').gsub('::', '_')
       main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
@@ -81,8 +82,7 @@ module YotpoKafka
                 backtrace: error.backtrace)
     end
 
-    def set_retry_policy(listen_to_failures, json_parse)
-      @json_parse = json_parse.nil? ? true : json_parse
+    def set_retry_policy(listen_to_failures)
       if !YotpoKafka.kafka_v2 && !@json_parse
         @listen_to_failures = false
         log_info('retry is not supported for non json message and without headers')
