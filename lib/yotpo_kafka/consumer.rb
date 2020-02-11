@@ -44,10 +44,10 @@ module YotpoKafka
 
     def consume_kafka_v1(payload, message)
       print_payload = get_printed_payload(payload)
-      log_info('Start handling consume',
-               topic: message.topic,
-               broker_url: @seed_brokers,
-               payload: print_payload)
+      # log_info('Start handling consume',
+      #          topic: message.topic,
+      #          broker_url: @seed_brokers,
+      #          payload: print_payload)
       if @json_parse
         begin
           payload = JSON.parse(payload)
@@ -133,19 +133,19 @@ module YotpoKafka
 
     def handle_error_kafka_v1(payload, topic, key, error, print_payload)
       unless @listen_to_failures
-        log_error('handle_error_kafka_v1 - not handling retry',
-                  error: error.message,
-                  topic: topic,
-                  backtrace: error.backtrace,
-                  payload: print_payload)
+        # log_error('handle_error_kafka_v1 - not handling retry',
+        #           error: error.message,
+        #           topic: topic,
+        #           backtrace: error.backtrace,
+        #           payload: print_payload)
         return
       end
 
-      log_error('handle_error_kafka_v1 - handling retry',
-                error: error.message,
-                topic: topic,
-                payload: print_payload,
-                backtrace: error.backtrace)
+      # log_error('handle_error_kafka_v1 - handling retry',
+      #           error: error.message,
+      #           topic: topic,
+      #           payload: print_payload,
+      #           backtrace: error.backtrace)
 
       begin
         key = key.to_s.encode('UTF-8') unless key.nil?
