@@ -16,6 +16,7 @@ module YotpoKafka
       @num_retries = params[:num_retries] || 0
       @topics = Array(params[:topics]) || nil
       @group_id = params[:group_id] || 'missing_groupid'
+      @start_from_beginning =  params[:start_from_beginning].nil? ? true : params[:start_from_beginning]
       @consumer = @kafka.consumer(group_id: @group_id)
     rescue => error
       log_error('Consumer Could not initialize',
@@ -45,7 +46,7 @@ module YotpoKafka
 
     def subscribe_to_topics
       @topics.each do |topic|
-        @consumer.subscribe(topic)
+        @consumer.subscribe(topic, start_from_beginning: @start_from_beginning)
         log_info('Consumer subscribes to topic: ' + topic)
         subscribe_to_failure_topic(topic) if @listen_to_failures
       end
