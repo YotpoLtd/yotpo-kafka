@@ -15,18 +15,16 @@ module YotpoKafka
     end
 
     def handle_consume(payload, message)
-      print_payload = get_printed_payload(payload)
-      log_debug('Start handling consume',
-                payload: print_payload, topic: message.topic, broker_url: @seed_brokers)
+      log_debug('Start handling consume', topic: message.topic, broker_url: @seed_brokers)
 
       payload = JSON.parse(payload) if @json_parse
       consume_message(payload)
     rescue => error
       log_error('avro consumer failed in service',
-                message: error.message, topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+                message: error.message, topic: message.topic, backtrace: error.backtrace)
     rescue SignalException => error
       log_error('Signal Exception',
-                message: error.message, topic: message.topic, payload: print_payload, backtrace: error.backtrace)
+                message: error.message, topic: message.topic, backtrace: error.backtrace)
       @consumer.stop
     end
   end

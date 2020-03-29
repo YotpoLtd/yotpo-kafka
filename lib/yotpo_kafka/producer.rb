@@ -30,19 +30,12 @@ module YotpoKafka
       @avro = AvroTurf::Messaging.new(registry_url: registry_url)
     end
 
-    def get_printed_payload(payload)
-      payload.to_s.encode('UTF-8')
-    rescue Encoding::UndefinedConversionError
-      'Msg is not encode-able'
-    end
-
     def unsafe_publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
-      # payload_print = get_printed_payload(payload)
-      # log_debug('Publishing message',
-      #           topic: topic, message: payload_print,
-      #           headers: kafka_v2_headers,
-      #           key: key,
-      #           broker_url: @seed_brokers)
+      log_debug('Publishing message',
+                topic: topic,
+                headers: kafka_v2_headers,
+                key: key,
+                broker_url: @seed_brokers)
       begin
         payload = payload.to_json if to_json
       rescue Encoding::UndefinedConversionError

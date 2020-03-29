@@ -75,14 +75,6 @@ module YotpoKafka
       main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
-    def get_printed_payload(payload)
-      payload.to_s.force_encoding('UTF-8')
-    rescue => error
-      log_error('kafka_v1 encoding error',
-                error: error.message,
-                backtrace: error.backtrace)
-    end
-
     def set_retry_policy(listen_to_failures)
       if !YotpoKafka.kafka_v2 && !@json_parse
         @listen_to_failures = false
