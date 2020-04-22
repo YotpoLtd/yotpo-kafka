@@ -71,6 +71,7 @@ module YotpoKafka
         CurrentAttempt: @num_retries,
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.message,
+        Backtrace: error.backtrace,
         MainTopic: topic,
         FailuresTopic: get_fail_topic_name(topic),
         Key: key
@@ -83,6 +84,7 @@ module YotpoKafka
         CurrentAttempt: parsed_hdr['CurrentAttempt'] - 1,
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
         Error: error.message,
+        Backtrace: error.backtrace,
         MainTopic: parsed_hdr['MainTopic'],
         FailuresTopic: parsed_hdr['FailuresTopic'],
         Key: parsed_hdr['Key']
