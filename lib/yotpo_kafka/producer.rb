@@ -55,7 +55,7 @@ module YotpoKafka
     def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
       unsafe_publish(topic, payload, kafka_v2_headers, key, to_json)
     rescue => error
-      post_to_retry_service(error, topic, payload, key)
+      post_to_retry_service(error.message, topic, payload, key)
       raise error
     end
 
@@ -73,7 +73,7 @@ module YotpoKafka
       backtrace_keeper = caller
       backtrace_keeper = backtrace_keeper[0..5] if backtrace_keeper.length > 6
       is_published = false
-      last_error = ''
+      error_msg = ''
       thread = Thread.new {
         (1..immediate_retry_count).each do |try_num|
           begin
@@ -88,32 +88,32 @@ module YotpoKafka
                       error: error.message,
                       backtrace: backtrace_keeper)
             sleep(interval_between_retry)
-            last_error = error.message
+            error_msg = error.message
           end
         end
         begin
-          post_to_retry_service(last_error, topic, value, key) unless is_published
+          post_to_retry_service(error_msg, topic, value, key) unless is_published
         rescue => error
           log_error('Save publish error failed',
                     error: error.message,
                     kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
-                    last_produce_error: last_error,
+                    last_produce_error: error_msg,
                     topic: topic)
         end
       }
       thread
     end
 
-    def post_to_retry_service(last_error, topic, value, key)
+    def post_to_retry_service(error_msg, topic, value, key)
       RestClient.post(YotpoKafka.kafka_retry_service_url + '/v1/kafkaretry/produce_errors', {
         produce_time: Time.now.utc.to_datetime.rfc3339,
-        error_msg: last_error,
+        error_msg: error_msg,
         topic: topic,
         payload: value,
         key: key
       }.to_json, content_type: 'application/json')
       log_info('Saved failed publish',
-               error_msg: last_error,
+               error_msg: error_msg,
                topic: topic)
     end
 
