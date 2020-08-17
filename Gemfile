@@ -4,4 +4,5 @@ gem 'rspec-core'
 gem 'rubocop', require: false
 gem 'rubocop-performance'
 gem 'ylogger', '0.1.0', source: 'https://yotpo.jfrog.io/yotpo/api/gems/gem-local/'
+gem 'red_cross', github: 'YotpoLtd/red_cross'
 gemspec
