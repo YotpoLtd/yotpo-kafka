@@ -5,6 +5,7 @@ module YotpoKafka
     DEFAULT_SCHEMA_REGISTRY_URL = 'https://schema-registry.us-east-1.yotpo.xyz'.freeze
 
     def initialize(params = {})
+      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
       @avro_messaging = AvroTurf::Messaging.new(registry_url: ENV['REGISTRY_URL'] || DEFAULT_SCHEMA_REGISTRY_URL)
       super
     end
