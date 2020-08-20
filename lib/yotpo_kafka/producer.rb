@@ -69,7 +69,7 @@ module YotpoKafka
                 topic: topic,
                 error: error.message)
       begin
-        RedCross.track(event: 'produce_failure', properties: { topic: topic })
+        RedCross.monitor_track(event: 'produce_failure', properties: { topic: topic })
       rescue => e
         log_error('Failed to report failure to influx',
                   broker_url: @seed_brokers,
