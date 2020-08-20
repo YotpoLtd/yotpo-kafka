@@ -22,18 +22,13 @@ module YotpoKafka
       log_error('Producer failed to initialize',
                 exception: error.message,
                 broker_url: @seed_brokers)
-      raise 'Producer failed to initialize'
+      raise error
     end
 
-    def set_avro_registry(registry_url)
-      require 'avro_turf/messaging'
-      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
-    end
-
-    def unsafe_publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
+    def publish(topic, payload, headers = {}, key = nil, to_json = true)
       log_debug('Publishing message',
                 topic: topic,
-                headers: kafka_v2_headers,
+                headers: headers,
                 key: key,
                 broker_url: @seed_brokers)
       begin
@@ -42,94 +37,51 @@ module YotpoKafka
         log_error('Failed to convert msg to json')
       end
       payload = @avro.encode(payload) if @avro
-      handle_produce(payload, key, topic, kafka_v2_headers)
+      handle_produce(payload, key, topic, headers)
       log_debug('Publish done')
     rescue => error
-      log_error('Single publish failed',
-                broker_url: @seed_brokers,
-                topic: topic,
-                error: error.message)
-      raise error
+      handle_produce_failures(topic, error)
     end
 
-    def publish(topic, payload, kafka_v2_headers = {}, key = nil, to_json = true)
-      unsafe_publish(topic, payload, kafka_v2_headers, key, to_json)
-    rescue => error
-      post_to_retry_service(error.message, topic, payload, key)
-      raise error
-    end
-
-    def handle_produce(payload, key, topic, kafka_v2_headers)
-      if YotpoKafka.kafka_v2
-        @producer.produce(payload, key: key, headers: kafka_v2_headers, topic: topic)
-      else
-        @producer.produce(payload, key: key, topic: topic)
-      end
-      @producer.deliver_messages
-    end
-
-    def async_publish_with_retry(topic, value, headers = {}, key = nil,
-                                 immediate_retry_count = 3, interval_between_retry = 2, to_json = true)
-      backtrace_keeper = caller
-      backtrace_keeper = backtrace_keeper[0..5] if backtrace_keeper.length > 6
-      is_published = false
-      error_msg = ''
-      thread = Thread.new {
-        (1..immediate_retry_count).each do |try_num|
-          begin
-            unsafe_publish(topic, value, headers, key, to_json)
-            is_published = true
-            break
-          rescue => error
-            log_error('Async publish failed',
-                      attempt: try_num.to_s,
-                      topic: topic,
-                      broker_url: @seed_brokers,
-                      error: error.message,
-                      backtrace: backtrace_keeper)
-            sleep(interval_between_retry)
-            error_msg = error.message
-          end
-        end
-        begin
-          post_to_retry_service(error_msg, topic, value, key) unless is_published
-        rescue => error
-          log_error('Save publish error failed',
-                    error: error.message,
-                    kafka_retry_service_url: YotpoKafka.kafka_retry_service_url,
-                    last_produce_error: error_msg,
-                    topic: topic)
-        end
-      }
-      thread
-    end
-
-    def post_to_retry_service(error_msg, topic, value, key)
-      RestClient.post(YotpoKafka.kafka_retry_service_url + '/v1/kafkaretry/produce_errors', {
-        produce_time: Time.now.utc.to_datetime.rfc3339,
-        error_msg: error_msg,
-        topic: topic,
-        payload: value,
-        key: key
-      }.to_json, content_type: 'application/json')
-      log_info('Saved failed publish',
-               error_msg: error_msg,
-               topic: topic)
-    end
-
-    def publish_multiple(topic, payloads, kafka_v2_headers = {}, key = nil, to_json = true)
+    def publish_multiple(topic, payloads, headers = {}, key = nil, to_json = true)
       log_debug('Publishing multiple messages',
                 topic: topic,
                 message: value,
-                headers: kafka_v2_headers,
+                headers: headers,
                 key: key,
                 broker_url: @seed_brokers)
       payloads.each do |payload|
-        publish(topic, payload, kafka_v2_headers, key, to_json)
+        publish(topic, payload, headers, key, to_json)
       end
     rescue => error
       log_error('Publish multi messages failed',
                 exception: error.message)
+    end
+
+    def handle_produce(payload, key, topic, headers)
+      @producer.produce(payload, key: key, headers: headers, topic: topic)
+      @producer.deliver_messages
+    end
+
+    def handle_produce_failures(topic, error)
+      log_error('Single publish failed',
+                broker_url: @seed_brokers,
+                topic: topic,
+                error: error.message)
+      begin
+        RedCross.track(event: 'produce_failure', properties: { topic: topic })
+      rescue => e
+        log_error('Failed to report failure to influx',
+                  broker_url: @seed_brokers,
+                  topic: topic,
+                  error: e.message)
+      end
+      raise error
+    end
+
+    def set_avro_registry(registry_url)
+      require 'avro_turf/messaging'
+      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
     end
   end
 end

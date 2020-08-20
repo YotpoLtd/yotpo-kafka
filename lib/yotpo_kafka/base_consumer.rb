@@ -11,12 +11,11 @@ module YotpoKafka
       @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
       @kafka = Kafka.new(@seed_brokers)
       @seconds_between_retries = params[:seconds_between_retries] || 0
-      @json_parse = params[:json_parse].nil? ? true : params[:json_parse]
-      set_retry_policy(params[:listen_to_failures])
+      @listen_to_failures = params[:listen_to_failures].nil? ? true : params[:listen_to_failures]
       @num_retries = params[:num_retries] || 0
       @topics = Array(params[:topics]) || nil
       @group_id = params[:group_id] || 'missing_groupid'
-      @start_from_beginning =  params[:start_from_beginning].nil? ? true : params[:start_from_beginning]
+      @start_from_beginning = params[:start_from_beginning].nil? ? true : params[:start_from_beginning]
       @consumer = @kafka.consumer(group_id: @group_id)
     rescue => error
       log_error('Consumer Could not initialize',
@@ -73,15 +72,6 @@ module YotpoKafka
       main_topic.tr('.', '_')
       group = @group_id.tr('.', '_').gsub('::', '_')
       main_topic + '.' + group + YotpoKafka.failures_topic_suffix
-    end
-
-    def set_retry_policy(listen_to_failures)
-      if !YotpoKafka.kafka_v2 && !@json_parse
-        @listen_to_failures = false
-        log_info('retry is not supported for non json message and without headers')
-      else
-        @listen_to_failures = listen_to_failures.nil? ? true : listen_to_failures
-      end
     end
 
     def handle_consume(_payload, _message)

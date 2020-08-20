@@ -7,22 +7,26 @@ Add this line to your application's Gemfile:
 ```ruby
 gem 'yotpo-ruby-kafka'
 ```
+###Broker Definition
+1. Pass as an argument on producer/consumer initialization
+2. Define as an env var - BROKER_URL
+3. Defaults to 127.0.0.1
 
-Define BROKER_URL environment variable (default 127.0.0.1)
+###Failure Monitoring
+Define influxdb env vars on your service -INFLUXDB_DB, INFLUXDB_HOST, INFLUXDB_PORT  
 
 ### Creating a producer:
 
 ```ruby
 require 'yotpo_kafka'
 ...
-YotpoKafka::Producer.new.publish(EVENTBUS['REVIEW_IMAGE_CREATE_TOPIC'], message, headers, key)
+YotpoKafka::Producer.new.publish(topic, message, headers, key)
 ...
 
 ```
-
-* **_value:_** string to publish
-
 * **_topic:_** name of the topic to publish to (can also be an array of topics)
+
+* **_message:_** string to publish
 
 * _**headers:**_ kafka headers map
 
@@ -31,12 +35,6 @@ YotpoKafka::Producer.new.publish(EVENTBUS['REVIEW_IMAGE_CREATE_TOPIC'], message,
         will be sent synchronicly. Advised to use when order of messages
         is required.Default: nil
         
-* _**red_cross:**_: monitoring by red cross. Default is false
-
-* _**logstash_logger:**_:  if set to true, will log in Logstash format. indexing uuid, 
-                            last few backtrace lines as context,
-                            tag, and an extra_data hash provided to the logger by the user.. Default is true
-
 ### Creating a consumer:
 A consumer will be defined in a rake task as follows:
 
@@ -70,11 +68,9 @@ end
 ```
 * _**seconds_between_retries:**_ in seconds.
 
-* _**num_retries:**_ num of retries of reconsuming message in case of exception. 
+* _**num_retries:**_ num of retries of re-consuming message in case of exception. 
                        When retry is 0, failure is sent to fatal topic. Default is 0
                        
-* _**red_cross:**_ monitoring by red cross. Default is nil
-
 * _**logstash_logger:**_ if set to true, will log in Logstash format. Default is true
 
 #### Retry Mechanism

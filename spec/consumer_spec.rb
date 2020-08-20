@@ -26,14 +26,6 @@ describe YotpoKafka::Consumer do
     expect { consumer.start_consumer }.to_not raise_error
   end
 
-  it 'config consumer with listen_to_failures=true and json_parse=false resulting listen_to_failures=false for kafka_v1' do
-    YotpoKafka.kafka_v2 = false
-
-    consumer = YotpoKafka::Consumer.new(listen_to_failures: true, json_parse: false)
-
-    expect(consumer.instance_variable_get(:@listen_to_failures)).to be(false)
-  end
-
   it 'consumer one topic with failures topic' do
     consumer = YotpoKafka::Consumer.new(topics: 'blue')
     expect { consumer.subscribe_to_topics }.to_not raise_error
@@ -63,12 +55,10 @@ describe YotpoKafka::Consumer do
   end
 
   it 'getting to consume message that raises error, key nil' do
-    YotpoKafka.kafka_v2 = true
     expect { Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: nil)) }.to_not raise_error
   end
 
   it 'getting to consume message that raises error, key not nil' do
-    YotpoKafka.kafka_v2 = true
     expect { Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: 'buya')) }.to_not raise_error
   end
 
@@ -89,15 +79,13 @@ describe YotpoKafka::Consumer do
   end
 
   it 'handle error if consumer raises' do
-    YotpoKafka.kafka_v2 = true
-    expect_any_instance_of(YotpoKafka::Consumer).to receive(:handle_error_kafka_v2).once.and_call_original
+    expect_any_instance_of(YotpoKafka::Consumer).to receive(:handle_consume_error).once.and_call_original
     expect_any_instance_of(YotpoKafka::Consumer).to receive(:publish_to_retry_service).once.and_call_original
     expect_any_instance_of(YotpoKafka::Producer).to receive(:publish)
     Helpers::ConsumerHandlerWithError.new.handle_consume('message', DummyMsg.new(key: 'buya'))
   end
 
   it 'sets failure headers if error' do
-    YotpoKafka.kafka_v2 = true
     message = DummyMsg.new(key: 'buya')
     Helpers::ConsumerHandlerWithError.new.handle_consume('message', message)
     headers = JSON.parse(message.headers['retry'])
@@ -105,8 +93,8 @@ describe YotpoKafka::Consumer do
   end
 
   it 'reduce attempts in headers if error' do
-    YotpoKafka.kafka_v2 = true
-    expect_any_instance_of(YotpoKafka::Producer).to receive(:publish).with('topic.missing_groupid.failures', anything, anything, anything, anything)
+    expect_any_instance_of(YotpoKafka::Producer).to receive(:publish)
+      .with('topic.missing_groupid.failures', anything, anything, anything, anything)
     message = DummyMsg.new(key: 'buya')
     Helpers::ConsumerHandlerWithError.new(num_retries: 3).handle_consume('message', message)
     headers = JSON.parse(message.headers['retry'])
@@ -114,7 +102,6 @@ describe YotpoKafka::Consumer do
   end
 
   it 'publish to retry service if seconds between retries' do
-    YotpoKafka.kafka_v2 = true
     expect_any_instance_of(YotpoKafka::Producer).to receive(:publish).with('retry_handler', anything, anything, anything, anything)
     message = DummyMsg.new(key: 'buya')
     Helpers::ConsumerHandlerWithError.new(num_retries: 3, seconds_between_retries: 2).handle_consume('message', message)
