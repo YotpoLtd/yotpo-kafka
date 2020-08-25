@@ -13,7 +13,12 @@ gem 'yotpo-ruby-kafka'
 3. Defaults to 127.0.0.1
 
 ###Failure Monitoring
-Define influxdb env vars on your service -INFLUXDB_DB, INFLUXDB_HOST, INFLUXDB_PORT  
+* Consume failures - see http://kafka-failures-ui.us-east-1.yotpo.xyz/
+* Produce failures - build a ELK graph on Grafana:
+```ruby
+Query : log_tag:"yotpo_ruby_kafka" AND message:"Single publish failed"
+````
+    
 
 ### Creating a producer:
 
