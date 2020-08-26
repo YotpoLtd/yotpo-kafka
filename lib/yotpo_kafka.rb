@@ -1,5 +1,4 @@
 require_relative '../config/initializers/ylogger'
-require_relative '../config/initializers/red_cross'
 require 'kafka'
 require 'ylogger'
 require 'yotpo_kafka/producer'
@@ -25,4 +24,3 @@ YotpoKafka.fatal_topic = 'fatal'
 YotpoKafka.failures_topic_suffix = '.failures'
 YotpoKafka.default_partitions_num = ENV['DEFAULT_PARTITIONS_NUM'] || 1
 YotpoKafka.default_replication_factor = ENV['DEFAULT_REPLICATION_FACTOR'] || 1
-YotpoKafka::YRedCrossKafka.config

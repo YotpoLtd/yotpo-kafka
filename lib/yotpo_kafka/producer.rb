@@ -46,7 +46,6 @@ module YotpoKafka
     def publish_multiple(topic, payloads, headers = {}, key = nil, to_json = true)
       log_debug('Publishing multiple messages',
                 topic: topic,
-                message: value,
                 headers: headers,
                 key: key,
                 broker_url: @seed_brokers)
@@ -56,6 +55,7 @@ module YotpoKafka
     rescue => error
       log_error('Publish multi messages failed',
                 exception: error.message)
+      raise error
     end
 
     def handle_produce(payload, key, topic, headers)
@@ -68,14 +68,6 @@ module YotpoKafka
                 broker_url: @seed_brokers,
                 topic: topic,
                 error: error.message)
-      begin
-        RedCross.monitor_track(event: 'produce_failure', properties: { topic: topic })
-      rescue => e
-        log_error('Failed to report failure to influx',
-                  broker_url: @seed_brokers,
-                  topic: topic,
-                  error: e.message)
-      end
       raise error
     end
 
