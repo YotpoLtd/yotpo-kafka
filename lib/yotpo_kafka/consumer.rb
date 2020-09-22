@@ -20,12 +20,6 @@ module YotpoKafka
       consume_message(payload)
     rescue => error
       handle_consume_error(message, error)
-    rescue SignalException => error
-      log_error('Signal Exception',
-                error: error.message,
-                backtrace: error.backtrace)
-      handle_consume_error(message, error)
-      @consumer.stop
     end
 
     def handle_consume_error(message, error)

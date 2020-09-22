@@ -3,8 +3,8 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name = 'yotpo-ruby-kafka'
-  s.version = '2.0.2'
-  s.date = '2020-08-18'
+  s.version = '2.0.3'
+  s.date = '2020-09-22'
   s.authors = 'Gophers'
   s.summary = 'yotpo-kafka: encapsulate ruby-kafka library with consume retry mechanism'
   s.files = `git ls-files -z`.split("\x0").reject do |f|
