@@ -17,6 +17,7 @@ module YotpoKafka
       @group_id = params[:group_id] || 'missing_groupid'
       @start_from_beginning = params[:start_from_beginning].nil? ? true : params[:start_from_beginning]
       @consumer = @kafka.consumer(group_id: @group_id)
+      trap("INT") { @consumer.stop }
     rescue => error
       log_error('Consumer Could not initialize',
                 error: error.message,
