@@ -47,7 +47,7 @@ module YotpoKafka
     def subscribe_to_topics
       @topics.each do |topic|
         @consumer.subscribe(topic, start_from_beginning: @start_from_beginning)
-        log_info('Consumer subscribes to topic: ' + topic)
+        log_info('Consumer subscribes to topic: ' + topic, broker_url: @seed_brokers)
         subscribe_to_failure_topic(topic) if @listen_to_failures
       end
     end
@@ -66,7 +66,7 @@ module YotpoKafka
       end
 
       @consumer.subscribe(failure_topic)
-      log_info('Consume subscribes to topic: ' + failure_topic)
+      log_info('Consumer subscribes to topic: ' + failure_topic, broker_url: @seed_brokers)
     end
 
     def get_fail_topic_name(main_topic)
