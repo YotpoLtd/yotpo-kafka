@@ -27,7 +27,6 @@ module YotpoKafka
     end
 
     def start_consumer
-      log_debug('Starting consume', broker_url: @seed_brokers)
       subscribe_to_topics
       @consumer.each_message do |message|
         @consumer.mark_message_as_processed(message)

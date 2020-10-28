@@ -13,10 +13,6 @@ module YotpoKafka
     end
 
     def handle_consume(payload, message)
-      log_debug('Start handling consume',
-                headers: message.headers,
-                topic: message.topic,
-                broker_url: @seed_brokers)
       consume_message(payload)
     rescue => error
       handle_consume_error(message, error)

@@ -16,8 +16,6 @@ module YotpoKafka
     end
 
     def handle_consume(payload, message)
-      log_debug('Start handling consume', topic: message.topic, broker_url: @seed_brokers)
-
       payload = JSON.parse(payload) if @json_parse
       consume_message(payload)
     rescue => error
