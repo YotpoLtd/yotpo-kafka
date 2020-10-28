@@ -26,11 +26,6 @@ module YotpoKafka
     end
 
     def publish(topic, payload, headers = {}, key = nil, to_json = true)
-      log_debug('Publishing message',
-                topic: topic,
-                headers: headers,
-                key: key,
-                broker_url: @seed_brokers)
       begin
         payload = payload.to_json if to_json
       rescue Encoding::UndefinedConversionError
@@ -38,17 +33,11 @@ module YotpoKafka
       end
       payload = @avro.encode(payload) if @avro
       handle_produce(payload, key, topic, headers)
-      log_debug('Publish done')
     rescue => error
       handle_produce_failures(topic, error)
     end
 
     def publish_multiple(topic, payloads, headers = {}, key = nil, to_json = true)
-      log_debug('Publishing multiple messages',
-                topic: topic,
-                headers: headers,
-                key: key,
-                broker_url: @seed_brokers)
       payloads.each do |payload|
         publish(topic, payload, headers, key, to_json)
       end
