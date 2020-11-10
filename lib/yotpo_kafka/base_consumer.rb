@@ -13,6 +13,8 @@ module YotpoKafka
       @seconds_between_retries = params[:seconds_between_retries] || 0
       @listen_to_failures = params[:listen_to_failures].nil? ? true : params[:listen_to_failures]
       @num_retries = params[:num_retries] || 0
+      @partitions_num = params[:partitions_num] || ENV['DEFAULT_PARTITIONS_NUM'] || 35
+      @replication_factor = params[:replication_factor] || ENV['DEFAULT_REPLICATION_FACTOR'] || 3
       @topics = Array(params[:topics]) || nil
       @group_id = params[:group_id] || 'missing_groupid'
       @start_from_beginning = params[:start_from_beginning].nil? ? true : params[:start_from_beginning]
@@ -55,11 +57,11 @@ module YotpoKafka
       failure_topic = get_fail_topic_name(topic)
       begin
         log_info('Created new topic: ' + failure_topic,
-                 partitions_num: YotpoKafka.default_partitions_num,
-                 replication_factor: YotpoKafka.default_replication_factor)
+                 partitions_num: @partitions_num,
+                 replication_factor: @replication_factor)
         @kafka.create_topic(failure_topic,
-                            num_partitions: YotpoKafka.default_partitions_num.to_i,
-                            replication_factor: YotpoKafka.default_replication_factor.to_i)
+                            num_partitions: @partitions_num.to_i,
+                            replication_factor: @replication_factor.to_i)
       rescue Kafka::TopicAlreadyExists
         nil
       end

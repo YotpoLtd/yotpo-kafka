@@ -27,7 +27,7 @@ describe YotpoKafka::Consumer do
   end
 
   it 'consumer one topic with failures topic' do
-    consumer = YotpoKafka::Consumer.new(topics: 'blue')
+    consumer = YotpoKafka::Consumer.new(topics: 'blue', partitions_num: 1, replication_factor: 1)
     expect { consumer.subscribe_to_topics }.to_not raise_error
   end
 
@@ -37,12 +37,12 @@ describe YotpoKafka::Consumer do
   end
 
   it 'consumer to multi topics' do
-    consumer = YotpoKafka::Consumer.new(topics: %w[blue yaniv magniv])
+    consumer = YotpoKafka::Consumer.new(topics: %w[blue yaniv magniv], partitions_num: 1, replication_factor: 1)
     expect { consumer.subscribe_to_topics }.to_not raise_error
   end
 
   it 'consumer to multi topics' do
-    consumer = YotpoKafka::Consumer.new(topics: %w[blue yaniv magniv], group_id: 'my_group')
+    consumer = YotpoKafka::Consumer.new(topics: %w[blue yaniv magniv], group_id: 'my_group', partitions_num: 1, replication_factor: 1)
     expect { consumer.subscribe_to_topics }.to_not raise_error
   end
 
