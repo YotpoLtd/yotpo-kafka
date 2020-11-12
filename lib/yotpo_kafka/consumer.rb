@@ -77,7 +77,7 @@ module YotpoKafka
     def publish_to_retry_service(retry_hdr, message, key)
       if (retry_hdr[:CurrentAttempt]).positive?
         message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
-        topic = @seconds_between_retries.zero? ? retry_hdr[:FailuresTopic] : YotpoKafka.retry_topic
+        topic = YotpoKafka.retry_topic
         log_error('Message failed to consumed, send to RETRY', retry_hdr: retry_hdr.to_s)
       else
         retry_hdr[:NextExecTime] = Time.now.utc.to_datetime.rfc3339

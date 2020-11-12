@@ -94,7 +94,7 @@ describe YotpoKafka::Consumer do
 
   it 'reduce attempts in headers if error' do
     expect_any_instance_of(YotpoKafka::Producer).to receive(:publish)
-      .with('topic.missing_groupid.failures', anything, anything, anything, anything)
+      .with(YotpoKafka.retry_topic, anything, anything, anything, anything)
     message = DummyMsg.new(key: 'buya')
     Helpers::ConsumerHandlerWithError.new(num_retries: 3).handle_consume('message', message)
     headers = JSON.parse(message.headers['retry'])
