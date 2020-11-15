@@ -58,7 +58,10 @@ require 'yotpo_kafka'
 ```
 * _**topics:**_ name of the topic to publish to (or an array of topics)
 
-* **_group_id:_** consumer will be part of consumer group with given id (One for all topics)
+* **_group_id:_** must, consumer will be part of consumer group with given id (One for all topics).
+
+* **_listen_to_failures:_** default to true. 
+The failures topic must be created beforehand, by the convention: `{topic_name}.{group_id}.failures` 
 
 * **_handler:_** class that handles the consumed messages payload
 ```ruby

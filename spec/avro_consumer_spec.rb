@@ -2,10 +2,14 @@ require 'spec_helper'
 
 describe YotpoKafka::AvroConsumer do
 
+  before(:each) do
+    @params = { group_id: 'my_group' }
+  end
+
   it 'init AvroConsumer with DEFAULT_SCHEMA_REGISTRY_URL' do
     expect(AvroTurf::Messaging).to receive(:new).with(registry_url: YotpoKafka::AvroConsumer::DEFAULT_SCHEMA_REGISTRY_URL)
 
-    YotpoKafka::AvroConsumer.new({})
+    YotpoKafka::AvroConsumer.new(@params)
   end
 
   it 'init AvroConsumer with env var REGISTRY_URL' do
@@ -14,7 +18,7 @@ describe YotpoKafka::AvroConsumer do
 
     expect(AvroTurf::Messaging).to receive(:new).with(registry_url: dummy_schema_registry_url)
 
-    YotpoKafka::AvroConsumer.new({})
+    YotpoKafka::AvroConsumer.new(@params)
   end
 
   it 'extract the message value and call avro_messaging.decode with the value' do
@@ -22,7 +26,7 @@ describe YotpoKafka::AvroConsumer do
     message = OpenStruct.new(value: message_value)
     avro_messaging = Helpers::AvroMessaging.new
     allow(AvroTurf::Messaging).to receive(:new).and_return(avro_messaging)
-    avro_consumer = YotpoKafka::AvroConsumer.new({})
+    avro_consumer = YotpoKafka::AvroConsumer.new(@params)
 
     expect(avro_messaging).to receive(:decode).with(message_value)
 
@@ -35,7 +39,7 @@ describe YotpoKafka::AvroConsumer do
     decoded_message_value = avro_messaging.decode(message_value)
     message = OpenStruct.new(value: message_value, topic: 'topic')
     allow(AvroTurf::Messaging).to receive(:new).and_return(avro_messaging)
-    avro_consumer = YotpoKafka::AvroConsumer.new(json_parse: false)
+    avro_consumer = YotpoKafka::AvroConsumer.new(@params.merge(json_parse: false))
 
     allow(avro_messaging).to receive(:decode).with(message_value)
     expect_any_instance_of(YotpoKafka::BaseConsumer).to receive(:consume_message).with(decoded_message_value)

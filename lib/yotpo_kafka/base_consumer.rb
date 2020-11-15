@@ -16,7 +16,9 @@ module YotpoKafka
       @partitions_num = params[:partitions_num] || ENV['DEFAULT_PARTITIONS_NUM'] || 35
       @replication_factor = params[:replication_factor] || ENV['DEFAULT_REPLICATION_FACTOR'] || 3
       @topics = Array(params[:topics]) || nil
-      @group_id = params[:group_id] || 'missing_groupid'
+      @group_id = params[:group_id]
+      raise 'group_id is missing' unless @group_id
+
       @start_from_beginning = params[:start_from_beginning].nil? ? true : params[:start_from_beginning]
       @consumer = @kafka.consumer(group_id: @group_id)
       trap("INT") { @consumer.stop }
@@ -49,31 +51,18 @@ module YotpoKafka
       @topics.each do |topic|
         @consumer.subscribe(topic, start_from_beginning: @start_from_beginning)
         log_info('Consumer subscribes to topic: ' + topic, broker_url: @seed_brokers)
-        subscribe_to_failure_topic(topic) if @listen_to_failures
+        subscribe_to_failures_topic(topic) if @listen_to_failures
       end
     end
 
-    def subscribe_to_failure_topic(topic)
-      failure_topic = get_fail_topic_name(topic)
-      begin
-        log_info('Created new topic: ' + failure_topic,
-                 partitions_num: @partitions_num,
-                 replication_factor: @replication_factor)
-        @kafka.create_topic(failure_topic,
-                            num_partitions: @partitions_num.to_i,
-                            replication_factor: @replication_factor.to_i)
-      rescue Kafka::TopicAlreadyExists
-        nil
-      end
-
-      @consumer.subscribe(failure_topic)
-      log_info('Consumer subscribes to topic: ' + failure_topic, broker_url: @seed_brokers)
+    def subscribe_to_failures_topic(topic)
+      failures_topic = get_fail_topic_name(topic)
+      @consumer.subscribe(failures_topic)
+      log_info('Consumer subscribes to failures topic', { broker_url: @seed_brokers, failures_topic: failures_topic })
     end
 
     def get_fail_topic_name(main_topic)
-      main_topic.tr('.', '_')
-      group = @group_id.tr('.', '_').gsub('::', '_')
-      main_topic + '.' + group + YotpoKafka.failures_topic_suffix
+      main_topic + '.' + @group_id + YotpoKafka.failures_topic_suffix
     end
 
     def handle_consume(_payload, _message)
