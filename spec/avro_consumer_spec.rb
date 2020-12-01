@@ -1,4 +1,5 @@
 require 'spec_helper'
+require 'avro_turf/messaging'
 
 describe YotpoKafka::AvroConsumer do
 

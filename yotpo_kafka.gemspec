@@ -3,7 +3,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
 Gem::Specification.new do |s|
   s.name = 'yotpo-ruby-kafka'
-  s.version = '2.0.6'
+  s.version = '2.0.7'
   s.date = '2020-11-10'
   s.authors = 'Gophers'
   s.summary = 'yotpo-kafka: encapsulate ruby-kafka library with consume retry mechanism'
