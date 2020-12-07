@@ -19,7 +19,7 @@ module YotpoKafka
     end
 
     def handle_consume_error(message, error)
-      unless @listen_to_failures
+      if @failures_topic.nil?
         log_error('Consume failure - not handling retry due to consumer policy',
                   error: error.message,
                   topic: message.topic,
@@ -56,7 +56,7 @@ module YotpoKafka
         Error: error.message,
         Backtrace: error.backtrace,
         MainTopic: topic,
-        FailuresTopic: get_fail_topic_name(topic),
+        FailuresTopic: @failures_topic,
         Key: key
       }.to_json
     end
