@@ -52,11 +52,14 @@ require 'yotpo_kafka'
                                     seconds_between_retries: 10,
                                     num_retries: 3,
                                     topics: 'rubytest',
+                                    failures_topic: 'rubytest.failures',
                                     group_id: 'consumer_test_topics',
                                    }).start_consumer
   end
 ```
 * _**topics:**_ name of the topic to publish to (or an array of topics)
+
+* _**failures_topic:**_ name of the topic to publish failures to.
 
 * **_group_id:_** consumer will be part of consumer group with given id (One for all topics)
 
