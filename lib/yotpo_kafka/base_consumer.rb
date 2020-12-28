@@ -52,8 +52,22 @@ module YotpoKafka
         log_info('Consumer subscribes to topic: ' + topic, broker_url: @seed_brokers)
       end
       unless @failures_topic.nil?
+        generate_failure_topic
         @consumer.subscribe(@failures_topic, start_from_beginning: @start_from_beginning)
         log_info('Consumer subscribes to failures topic: ' + @failures_topic, broker_url: @seed_brokers)
+      end
+    end
+
+    def generate_failure_topic
+      begin
+        @kafka.create_topic(@failures_topic,
+                            num_partitions: @partitions_num.to_i,
+                            replication_factor: @replication_factor.to_i)
+        log_error('Deprecated. Created new topic: ' + @failures_topic,
+                  partitions_num: @partitions_num,
+                  replication_factor: @replication_factor)
+      rescue Kafka::TopicAlreadyExists
+        nil
       end
     end
 
