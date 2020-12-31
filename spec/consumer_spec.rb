@@ -33,7 +33,7 @@ describe YotpoKafka::Consumer do
 
   it 'consumer one topic without failures topic' do
     consumer = YotpoKafka::Consumer.new(topics: 'blue2')
-    expect { consumer.subscribe_to_topics }.to raise_error
+    expect { consumer.subscribe_to_topics }.to_not raise_error
   end
 
   it 'consumer to multi topics' do
