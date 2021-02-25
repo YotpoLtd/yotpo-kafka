@@ -1,9 +1,11 @@
 lib = File.expand_path('lib', __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 
+
+version_suffix = ENV['GEM_VERSION_SUFFIX'] || ''
 Gem::Specification.new do |s|
   s.name = 'yotpo-ruby-kafka'
-  s.version = '3.0.3'
+  s.version = '3.1.0'.concat(version_suffix)
   s.date = '2020-12-30'
   s.authors = 'Gophers'
   s.summary = 'yotpo-kafka: encapsulate ruby-kafka library with consume retry mechanism'
