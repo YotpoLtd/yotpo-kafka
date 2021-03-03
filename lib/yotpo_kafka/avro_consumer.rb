@@ -20,6 +20,8 @@ module YotpoKafka
     rescue => error
       log_error('avro consumer failed in service',
                 message: error.message, topic: message.topic, backtrace: error.backtrace)
+
+      handle_consume_error(message, error)
     rescue SignalException => error
       log_error('Signal Exception',
                 message: error.message, topic: message.topic, backtrace: error.backtrace)
