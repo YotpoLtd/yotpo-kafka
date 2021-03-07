@@ -30,26 +30,19 @@ module YotpoKafka
                 error: error.message,
                 topic: message.topic,
                 backtrace: error.backtrace)
-      key = message.key || nil
-      begin
-        key = key.to_s.encode('UTF-8') unless key.nil?
-      rescue Encoding::UndefinedConversionError
-        log_error('Key sent in invalid format')
-        return
-      end
 
       unless message.headers[YotpoKafka.retry_header_key]
-        message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, key, error)
+        message.headers[YotpoKafka.retry_header_key] = get_init_retry_header(message.topic, error)
       end
       retry_hdr = update_retry_header(message.headers[YotpoKafka.retry_header_key], error)
-      publish_to_retry_service(retry_hdr, message, key)
+      publish_to_retry_service(retry_hdr, message)
     end
 
     def extract_payload(message)
       message.value
     end
 
-    def get_init_retry_header(topic, key, error)
+    def get_init_retry_header(topic, error)
       {
         CurrentAttempt: @num_retries,
         NextExecTime: (Time.now.utc + @seconds_between_retries).to_datetime.rfc3339,
@@ -57,7 +50,6 @@ module YotpoKafka
         Backtrace: error.backtrace,
         MainTopic: topic,
         FailuresTopic: @failures_topic.nil? ?  get_fail_topic_name(topic) : @failures_topic,
-        Key: key
       }.to_json
     end
 
@@ -70,11 +62,10 @@ module YotpoKafka
         Backtrace: error.backtrace,
         MainTopic: parsed_hdr['MainTopic'],
         FailuresTopic: parsed_hdr['FailuresTopic'],
-        Key: parsed_hdr['Key']
       }
     end
 
-    def publish_to_retry_service(retry_hdr, message, key)
+    def publish_to_retry_service(retry_hdr, message)
       if (retry_hdr[:CurrentAttempt]).positive?
         message.headers[YotpoKafka.retry_header_key] = retry_hdr.to_json
         topic = YotpoKafka.retry_topic
@@ -86,7 +77,7 @@ module YotpoKafka
         log_error('Message failed to consumed, send to FATAL', retry_hdr: retry_hdr.to_s)
       end
 
-      @producer.publish(topic, message.value, message.headers, key, false)
+      @producer.publish(topic, message.value, message.headers, message.key, false)
     end
   end
 end
