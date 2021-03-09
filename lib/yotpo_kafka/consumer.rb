@@ -6,7 +6,6 @@ module YotpoKafka
 
       @producer = Producer.new(
         client_id: @group_id,
-        avro_encoding: @avro_encoding,
         logstash_logger: @use_logstash_logger,
         broker_url: @seed_brokers
       )

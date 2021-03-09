@@ -50,11 +50,19 @@ module YotpoKafka
       @topics.each do |topic|
         @consumer.subscribe(topic, start_from_beginning: @start_from_beginning)
         log_info('Consumer subscribes to topic: ' + topic, broker_url: @seed_brokers)
+        @failures_topic = get_fail_topic_name(topic) if @failures_topic.nil?
       end
+
       if @failures_topic
         @consumer.subscribe(@failures_topic, start_from_beginning: @start_from_beginning)
         log_info('Consumer subscribes to failures topic: ' + @failures_topic, broker_url: @seed_brokers)
       end
+    end
+
+    def get_fail_topic_name(main_topic)
+      main_topic.tr('.', '_')
+      group = @group_id.tr('.', '_').gsub('::', '_')
+      main_topic + '.' + group + YotpoKafka.failures_topic_suffix
     end
 
     def handle_consume(_payload, _message)
