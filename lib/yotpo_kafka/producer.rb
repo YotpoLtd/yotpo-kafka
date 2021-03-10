@@ -17,7 +17,6 @@ module YotpoKafka
       @seed_brokers = params[:broker_url] || ENV['BROKER_URL'] || '127.0.0.1:9092'
       @kafka = Kafka.new(@seed_brokers)
       @producer = @kafka.producer(compression_codec: compression)
-      @avro_encoding = params[:avro_encoding] || false
     rescue => error
       log_error('Producer failed to initialize',
                 exception: error.message,
@@ -31,7 +30,6 @@ module YotpoKafka
       rescue Encoding::UndefinedConversionError
         log_error('Failed to convert msg to json')
       end
-      payload = @avro.encode(payload) if @avro
       handle_produce(payload, key, topic, headers)
     rescue => error
       handle_produce_failures(topic, error)
@@ -58,11 +56,6 @@ module YotpoKafka
                 topic: topic,
                 error: error.message)
       raise error
-    end
-
-    def set_avro_registry(registry_url)
-      require 'avro_turf/messaging'
-      @avro = AvroTurf::Messaging.new(registry_url: registry_url)
     end
   end
 end
